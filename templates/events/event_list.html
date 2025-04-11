@@ -1,0 +1,192 @@
+{% extends 'base.html' %}
+
+{% block title %}Events - EventHub{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'home' %}" class="text-decoration-none">Home</a></li>
+                <li class="breadcrumb-item active" aria-current="page">Events</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-8">
+        <h1 class="mb-0"><i class="fas fa-calendar-alt text-highlight me-2"></i>Browse Events</h1>
+    </div>
+    <div class="col-md-4 text-end">
+        {% if user.is_authenticated %}
+        <a href="{% url 'create_event' %}" class="btn btn-success">
+            <i class="fas fa-plus-circle me-2"></i>Create Event
+        </a>
+        {% endif %}
+    </div>
+</div>
+
+<div class="row">
+    <!-- Filters -->
+    <div class="col-md-3 mb-4">
+        <div class="card sticky-top" style="top: 20px; z-index: 1;">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-filter me-2"></i>Filters</h5>
+            </div>
+            <div class="card-body">
+                <form method="get" action="{% url 'event_list' %}">
+                    {% if search_query %}
+                    <input type="hidden" name="q" value="{{ search_query }}">
+                    {% endif %}
+                    
+                    <div class="mb-3">
+                        <label for="category" class="form-label">Category</label>
+                        <select class="form-select" id="category" name="category">
+                            <option value="">All Categories</option>
+                            {% for category in categories %}
+                            <option value="{{ category.id }}" {% if category_id == category.id|stringformat:"i" %}selected{% endif %}>
+                                {{ category.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="date" class="form-label">Date</label>
+                        <select class="form-select" id="date" name="date">
+                            <option value="">Any Date</option>
+                            <option value="today" {% if date_filter == 'today' %}selected{% endif %}>Today</option>
+                            <option value="tomorrow" {% if date_filter == 'tomorrow' %}selected{% endif %}>Tomorrow</option>
+                            <option value="this-week" {% if date_filter == 'this-week' %}selected{% endif %}>This Week</option>
+                            <option value="this-month" {% if date_filter == 'this-month' %}selected{% endif %}>This Month</option>
+                        </select>
+                    </div>
+                    
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-filter me-2"></i>Apply Filters
+                        </button>
+                    </div>
+                    
+                    {% if category_id or date_filter %}
+                    <div class="d-grid mt-2">
+                        <a href="{% url 'event_list' %}{% if search_query %}?q={{ search_query }}{% endif %}" class="btn btn-outline-secondary">
+                            <i class="fas fa-times me-2"></i>Clear Filters
+                        </a>
+                    </div>
+                    {% endif %}
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Event List -->
+    <div class="col-md-9">
+        {% if search_query %}
+        <div class="alert alert-info mb-4">
+            <i class="fas fa-search me-2"></i>Search results for: <strong>{{ search_query }}</strong>
+            <a href="{% url 'event_list' %}{% if category_id %}?category={{ category_id }}{% endif %}{% if date_filter %}{% if category_id %}&{% else %}?{% endif %}date={{ date_filter }}{% endif %}" class="float-end text-decoration-none">
+                <i class="fas fa-times"></i>
+            </a>
+        </div>
+        {% endif %}
+        
+        <div class="row">
+            {% if page_obj %}
+                {% for event in page_obj %}
+                    <div class="col-md-6 col-lg-4 mb-4">
+                        <div class="card h-100">
+                            {% if event.banner_image %}
+                                <img src="{{ event.banner_image.url }}" class="card-img-top" alt="{{ event.title }}">
+                            {% else %}
+                                <div class="card-img-top bg-dark text-center py-5" style="background: linear-gradient(135deg, var(--dark-blue), var(--dark-purple));">
+                                    <i class="fas fa-calendar-alt fa-4x text-white opacity-50"></i>
+                                </div>
+                            {% endif %}
+                            <div class="card-body">
+                                <div class="date-badge mb-3">
+                                    <i class="far fa-calendar-alt me-2"></i>{{ event.start_date|date:"M d, Y • g:i A" }}
+                                </div>
+                                <h5 class="card-title">{{ event.title }}</h5>
+                                <p class="card-text text-muted">{{ event.description|truncatechars:80 }}</p>
+                                <div class="d-flex align-items-center mb-2">
+                                    <i class="fas fa-map-marker-alt text-highlight me-2"></i>
+                                    <span>{{ event.location }}</span>
+                                </div>
+                                <div class="d-flex align-items-center">
+                                    <i class="fas fa-tag text-highlight me-2"></i>
+                                    <span>{{ event.category.name }}</span>
+                                </div>
+                            </div>
+                            <div class="card-footer d-grid">
+                                <a href="{% url 'event_detail' event_id=event.id %}" class="btn btn-primary">
+                                    <i class="fas fa-info-circle me-2"></i>View Details
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-body text-center py-5">
+                            <i class="fas fa-search fa-4x mb-3 text-muted"></i>
+                            <h4>No events found</h4>
+                            <p class="text-muted">Try adjusting your search or filters</p>
+                            <a href="{% url 'event_list' %}" class="btn btn-primary mt-2">
+                                <i class="fas fa-sync-alt me-2"></i>Reset Search
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+        
+        <!-- Pagination -->
+        {% if page_obj.paginator.num_pages > 1 %}
+        <div class="d-flex justify-content-center mt-4">
+            <nav aria-label="Event pagination">
+                <ul class="pagination">
+                    {% if page_obj.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page=1{% if search_query %}&q={{ search_query }}{% endif %}{% if category_id %}&category={{ category_id }}{% endif %}{% if date_filter %}&date={{ date_filter }}{% endif %}" aria-label="First">
+                            <span aria-hidden="true">&laquo;&laquo;</span>
+                        </a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if search_query %}&q={{ search_query }}{% endif %}{% if category_id %}&category={{ category_id }}{% endif %}{% if date_filter %}&date={{ date_filter }}{% endif %}" aria-label="Previous">
+                            <span aria-hidden="true">&laquo;</span>
+                        </a>
+                    </li>
+                    {% endif %}
+                    
+                    {% for num in page_obj.paginator.page_range %}
+                        {% if page_obj.number == num %}
+                            <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+                        {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ num }}{% if search_query %}&q={{ search_query }}{% endif %}{% if category_id %}&category={{ category_id }}{% endif %}{% if date_filter %}&date={{ date_filter }}{% endif %}">{{ num }}</a>
+                            </li>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if page_obj.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if search_query %}&q={{ search_query }}{% endif %}{% if category_id %}&category={{ category_id }}{% endif %}{% if date_filter %}&date={{ date_filter }}{% endif %}" aria-label="Next">
+                            <span aria-hidden="true">&raquo;</span>
+                        </a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if search_query %}&q={{ search_query }}{% endif %}{% if category_id %}&category={{ category_id }}{% endif %}{% if date_filter %}&date={{ date_filter }}{% endif %}" aria-label="Last">
+                            <span aria-hidden="true">&raquo;&raquo;</span>
+                        </a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

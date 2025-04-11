@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Event Management Platform{% endblock %}</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --dark-bg: #121212;
+            --darker-bg: #0a0a0a;
+            --dark-blue: #192841;
+            --dark-purple: #2e1a47;
+            --accent-color: #8e44ad;
+            --highlight-color: #e83e8c;
+            --text-color: #e0e0e0;
+            --text-muted: #a0a0a0;
+            --border-color: #333;
+        }
+        
+        body {
+            background-color: var(--dark-bg);
+            color: var(--text-color);
+            font-family: 'Poppins', sans-serif;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .navbar {
+            background-color: var(--darker-bg) !important;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .navbar-brand {
+            color: var(--accent-color) !important;
+            font-weight: 700;
+            letter-spacing: 1px;
+        }
+        
+        .nav-link {
+            color: var(--text-color) !important;
+            transition: color 0.3s ease;
+        }
+        
+        .nav-link:hover {
+            color: var(--highlight-color) !important;
+        }
+        
+        .dropdown-menu {
+            background-color: var(--darker-bg);
+            border: 1px solid var(--border-color);
+        }
+        
+        .dropdown-item {
+            color: var(--text-color);
+        }
+        
+        .dropdown-item:hover {
+            background-color: var(--dark-purple);
+            color: var(--text-color);
+        }
+        
+        .card {
+            background-color: var(--darker-bg);
+            border: 1px solid var(--border-color);
+            transition: transform 0.3s ease;
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+        }
+        
+        .card-header {
+            background-color: var(--dark-blue);
+            color: var(--text-color);
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .btn-primary {
+            background-color: var(--dark-blue);
+            border-color: var(--dark-blue);
+            transition: all 0.3s ease;
+        }
+        
+        .btn-primary:hover {
+            background-color: var(--accent-color);
+            border-color: var(--accent-color);
+        }
+        
+        .btn-success {
+            background-color: var(--dark-purple);
+            border-color: var(--dark-purple);
+            transition: all 0.3s ease;
+        }
+        
+        .btn-success:hover {
+            background-color: var(--accent-color);
+            border-color: var(--accent-color);
+        }
+        
+        .btn-highlight {
+            background-color: var(--highlight-color);
+            border-color: var(--highlight-color);
+            color: white;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-highlight:hover {
+            background-color: #d62a72;
+            border-color: #d62a72;
+            color: white;
+        }
+        
+        .text-highlight {
+            color: var(--highlight-color) !important;
+        }
+        
+        .footer {
+            background-color: var(--darker-bg);
+            border-top: 1px solid var(--border-color);
+            margin-top: auto;
+            padding: 1.5rem 0;
+        }
+        
+        .form-control, .form-select {
+            background-color: var(--dark-bg);
+            border: 1px solid var(--border-color);
+            color: var(--text-color);
+        }
+        
+        .form-control:focus, .form-select:focus {
+            background-color: var(--dark-bg);
+            border-color: var(--accent-color);
+            color: var(--text-color);
+            box-shadow: 0 0 0 0.25rem rgba(142, 68, 173, 0.25);
+        }
+        
+        .date-badge {
+            background: linear-gradient(135deg, var(--dark-blue), var(--dark-purple));
+            color: white;
+            padding: 10px;
+            border-radius: 5px;
+            font-weight: 500;
+        }
+        
+        .page-link {
+            background-color: var(--darker-bg);
+            border-color: var(--border-color);
+            color: var(--text-color);
+        }
+        
+        .page-link:hover {
+            background-color: var(--dark-blue);
+            color: var(--text-color);
+        }
+        
+        .page-item.active .page-link {
+            background-color: var(--accent-color);
+            border-color: var(--accent-color);
+        }
+        
+        .list-group-item {
+            background-color: var(--darker-bg);
+            border-color: var(--border-color);
+            color: var(--text-color);
+        }
+        
+        .table {
+            color: var(--text-color);
+        }
+        
+        .jumbotron {
+            background: linear-gradient(135deg, var(--dark-blue), var(--dark-purple));
+            padding: 3rem 2rem;
+            border-radius: 0.5rem;
+        }
+        
+        /* Toast/Alert styles */
+        .toast {
+            background-color: var(--darker-bg);
+            border-color: var(--border-color);
+        }
+        
+        .toast-header {
+            background-color: var(--dark-blue);
+            color: var(--text-color);
+        }
+        
+        .alert-success {
+            background-color: rgba(46, 204, 113, 0.2);
+            border-color: rgba(46, 204, 113, 0.4);
+            color: #2ecc71;
+        }
+        
+        .alert-danger {
+            background-color: rgba(231, 76, 60, 0.2);
+            border-color: rgba(231, 76, 60, 0.4);
+            color: #e74c3c;
+        }
+        
+        .alert-warning {
+            background-color: rgba(241, 196, 15, 0.2);
+            border-color: rgba(241, 196, 15, 0.4);
+            color: #f1c40f;
+        }
+        
+        .alert-info {
+            background-color: rgba(52, 152, 219, 0.2);
+            border-color: rgba(52, 152, 219, 0.4);
+            color: #3498db;
+        }
+    </style>
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark mb-4">
+        <div class="container">
+            <a class="navbar-brand" href="{% url 'home' %}">
+                <i class="fas fa-ticket-alt me-2"></i>EventHub
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'home' %}">
+                            <i class="fas fa-home me-1"></i> Home
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'event_list' %}">
+                            <i class="fas fa-calendar-alt me-1"></i> Events
+                        </a>
+                    </li>
+                    {% if user.is_authenticated %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'my_events' %}">
+                            <i class="fas fa-star me-1"></i> My Events
+                        </a>
+                    </li>
+                    {% endif %}
+                </ul>
+                <form class="d-flex me-2" action="{% url 'event_list' %}" method="get">
+                    <input class="form-control me-2" type="search" placeholder="Search events..." name="q" aria-label="Search">
+                    <button class="btn btn-highlight" type="submit">
+                        <i class="fas fa-search"></i>
+                    </button>
+                </form>
+                <ul class="navbar-nav">
+                    {% if user.is_authenticated %}
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                                <i class="fas fa-user-circle me-1"></i> {{ user.username }}
+                            </a>
+                            <ul class="dropdown-menu dropdown-menu-end">
+                                <li><a class="dropdown-item" href="{% url 'profile' %}">
+                                    <i class="fas fa-id-card me-1"></i> My Profile
+                                </a></li>
+                                <li><a class="dropdown-item" href="{% url 'my_events' %}">
+                                    <i class="fas fa-calendar-check me-1"></i> My Events
+                                </a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item" href="{% url 'logout' %}">
+                                    <i class="fas fa-sign-out-alt me-1"></i> Logout
+                                </a></li>
+                            </ul>
+                        </li>
+                    {% else %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'login' %}">
+                                <i class="fas fa-sign-in-alt me-1"></i> Login
+                            </a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mb-4">
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+        
+        {% block content %}{% endblock %}
+    </div>
+
+    <footer class="footer text-center">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-4">
+                    <h5 class="text-highlight">EventHub</h5>
+                    <p class="text-muted">Discover, create, and manage events easily.</p>
+                </div>
+                <div class="col-md-4">
+                    <h5 class="text-highlight">Quick Links</h5>
+                    <ul class="list-unstyled">
+                        <li><a href="{% url 'home' %}" class="text-muted">Home</a></li>
+                        <li><a href="{% url 'event_list' %}" class="text-muted">Events</a></li>
+                        {% if user.is_authenticated %}
+                        <li><a href="{% url 'my_events' %}" class="text-muted">My Events</a></li>
+                        {% else %}
+                        <li><a href="{% url 'login' %}" class="text-muted">Login</a></li>
+                        {% endif %}
+                    </ul>
+                </div>
+                <div class="col-md-4">
+                    <h5 class="text-highlight">Connect With Us</h5>
+                    <div class="d-flex justify-content-center">
+                        <a href="#" class="text-muted me-3"><i class="fab fa-facebook-f fa-lg"></i></a>
+                        <a href="#" class="text-muted me-3"><i class="fab fa-twitter fa-lg"></i></a>
+                        <a href="#" class="text-muted me-3"><i class="fab fa-instagram fa-lg"></i></a>
+                        <a href="#" class="text-muted"><i class="fab fa-linkedin-in fa-lg"></i></a>
+                    </div>
+                </div>
+            </div>
+            <div class="mt-3">
+                <p class="text-muted small mb-0">© 2025 EventHub. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Custom JS -->
+    <script>
+        // Initialize tooltips
+        document.addEventListener('DOMContentLoaded', function() {
+            var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+            var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+                return new bootstrap.Tooltip(tooltipTriggerEl);
+            });
+        });
+    </script>
+    
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

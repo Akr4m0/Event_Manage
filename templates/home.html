@@ -1,0 +1,172 @@
+{% extends 'base.html' %}
+
+{% block title %}Home - EventHub{% endblock %}
+
+{% block content %}
+<div class="row mb-5">
+    <div class="col-md-12">
+        <div class="jumbotron">
+            <div class="row align-items-center">
+                <div class="col-lg-7">
+                    <h1 class="display-4 fw-bold">Discover Amazing Events</h1>
+                    <p class="lead">Find and attend events that match your passions, or create your own experiences to share with others.</p>
+                    <hr class="my-4 opacity-25">
+                    <p>From conferences to workshops, concerts to social gatherings - find it all here.</p>
+                    <div class="mt-4 d-flex flex-wrap gap-2">
+                        <a class="btn btn-highlight btn-lg" href="{% url 'event_list' %}" role="button">
+                            <i class="fas fa-search me-2"></i>Browse Events
+                        </a>
+                        {% if user.is_authenticated %}
+                            <a class="btn btn-success btn-lg" href="{% url 'create_event' %}" role="button">
+                                <i class="fas fa-plus me-2"></i>Create Event
+                            </a>
+                        {% else %}
+                            <a class="btn btn-primary btn-lg" href="{% url 'login' %}" role="button">
+                                <i class="fas fa-sign-in-alt me-2"></i>Sign In
+                            </a>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="col-lg-5 d-none d-lg-block">
+                    <div class="position-relative">
+                        <div class="position-absolute top-0 start-0 w-100 h-100 rounded" style="background: radial-gradient(circle, rgba(142, 68, 173, 0.2) 0%, rgba(25, 40, 65, 0.3) 100%); z-index: 1;"></div>
+                        <img src="https://via.placeholder.com/600x400" alt="Event illustration" class="img-fluid rounded" style="opacity: 0.8;">
+                        <div class="position-absolute top-50 start-50 translate-middle" style="z-index: 2;">
+                            <div class="text-center">
+                                <i class="fas fa-calendar-alt fa-5x text-highlight mb-3"></i>
+                                <div class="text-white fs-4 fw-bold">Join Today</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-8">
+        <h2 class="mb-4">
+            <i class="fas fa-fire text-highlight me-2"></i>Featured Events
+        </h2>
+    </div>
+    <div class="col-md-4 text-end">
+        <a href="{% url 'event_list' %}" class="btn btn-outline-light">
+            <i class="fas fa-th-list me-2"></i>View All Events
+        </a>
+    </div>
+</div>
+
+<div class="row">
+    {% if featured_events %}
+        {% for event in featured_events %}
+            <div class="col-md-4 mb-4">
+                <div class="card h-100">
+                    {% if event.banner_image %}
+                        <img src="{{ event.banner_image.url }}" class="card-img-top" alt="{{ event.title }}">
+                    {% else %}
+                        <div class="card-img-top bg-dark text-center py-5" style="background: linear-gradient(135deg, var(--dark-blue), var(--dark-purple));">
+                            <i class="fas fa-calendar-alt fa-4x text-white opacity-50"></i>
+                        </div>
+                    {% endif %}
+                    <div class="card-body">
+                        <div class="date-badge mb-3">
+                            <i class="far fa-calendar-alt me-2"></i>{{ event.start_date|date:"M d, Y • g:i A" }}
+                        </div>
+                        <h5 class="card-title">{{ event.title }}</h5>
+                        <p class="card-text text-muted">{{ event.description|truncatechars:100 }}</p>
+                        <div class="d-flex align-items-center mb-3">
+                            <i class="fas fa-map-marker-alt text-highlight me-2"></i>
+                            <span>{{ event.location }}</span>
+                        </div>
+                        <div class="d-flex align-items-center">
+                            <i class="fas fa-tag text-highlight me-2"></i>
+                            <span>{{ event.category.name }}</span>
+                        </div>
+                    </div>
+                    <div class="card-footer d-grid">
+                        <a href="{% url 'event_detail' event_id=event.id %}" class="btn btn-primary">
+                            <i class="fas fa-info-circle me-2"></i>View Details
+                        </a>
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    {% else %}
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body text-center py-5">
+                    <i class="fas fa-calendar-times fa-4x mb-3 text-muted"></i>
+                    <h4>No featured events at the moment</h4>
+                    <p class="text-muted">Check back later or create your own event!</p>
+                    {% if user.is_authenticated %}
+                        <a href="{% url 'create_event' %}" class="btn btn-success mt-2">
+                            <i class="fas fa-plus me-2"></i>Create Event
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    {% endif %}
+</div>
+
+<div class="row mt-5">
+    <div class="col-md-12">
+        <h2 class="mb-4">
+            <i class="fas fa-th-large text-highlight me-2"></i>Browse by Category
+        </h2>
+    </div>
+</div>
+
+<div class="row">
+    {% for category in categories %}
+        <div class="col-md-3 col-sm-6 mb-4">
+            <a href="{% url 'event_list' %}?category={{ category.id }}" class="text-decoration-none">
+                <div class="card h-100">
+                    <div class="card-body text-center">
+                        <div class="rounded-circle mx-auto mb-3 d-flex align-items-center justify-content-center" style="width: 80px; height: 80px; background: linear-gradient(135deg, var(--dark-blue), var(--dark-purple));">
+                            <i class="fas fa-folder fa-2x text-white"></i>
+                        </div>
+                        <h5 class="card-title">{{ category.name }}</h5>
+                        <p class="card-text text-muted small">{{ category.description|default:'Find events in this category'|truncatechars:60 }}</p>
+                    </div>
+                </div>
+            </a>
+        </div>
+    {% empty %}
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body text-center py-4">
+                    <p class="text-muted">No categories available.</p>
+                </div>
+            </div>
+        </div>
+    {% endfor %}
+</div>
+
+<div class="row mt-5">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-body p-4">
+                <div class="row align-items-center">
+                    <div class="col-lg-8">
+                        <h3>Want to create your own event?</h3>
+                        <p class="mb-lg-0">Join our platform and start organizing memorable experiences today!</p>
+                    </div>
+                    <div class="col-lg-4 text-lg-end">
+                        {% if user.is_authenticated %}
+                            <a href="{% url 'create_event' %}" class="btn btn-highlight btn-lg">
+                                <i class="fas fa-plus me-2"></i>Create Event
+                            </a>
+                        {% else %}
+                            <a href="{% url 'login' %}" class="btn btn-highlight btn-lg">
+                                <i class="fas fa-sign-in-alt me-2"></i>Sign In to Create
+                            </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

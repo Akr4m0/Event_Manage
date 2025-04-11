@@ -1,0 +1,427 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ event.title }} - EventHub{% endblock %}
+
+{% block extra_css %}
+<style>
+    .event-banner {
+        height: 400px;
+        background-size: cover;
+        background-position: center;
+        position: relative;
+        border-radius: 0.5rem;
+        overflow: hidden;
+    }
+    
+    .event-banner::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(0deg, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0.4) 50%, rgba(0,0,0,0.2) 100%);
+    }
+    
+    .event-info {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        padding: 2rem;
+        color: white;
+    }
+    
+    .event-date-large {
+        background: linear-gradient(135deg, var(--dark-blue), var(--dark-purple));
+        padding: 1.5rem;
+        border-radius: 0.5rem;
+        text-align: center;
+    }
+    
+    .ticket-card {
+        border-left: 4px solid var(--accent-color);
+    }
+    
+    .ticket-card:hover {
+        border-left-color: var(--highlight-color);
+    }
+    
+    .event-detail-icon {
+        width: 40px;
+        height: 40px;
+        background-color: var(--dark-blue);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        margin-right: 1rem;
+    }
+    
+    .share-btn {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 0.5rem;
+        color: white;
+        transition: all 0.3s ease;
+    }
+    
+    .share-btn:hover {
+        transform: translateY(-3px);
+    }
+    
+    .share-facebook {
+        background-color: #3b5998;
+    }
+    
+    .share-twitter {
+        background-color: #1da1f2;
+    }
+    
+    .share-linkedin {
+        background-color: #0077b5;
+    }
+    
+    .share-email {
+        background-color: #ea4335;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'home' %}" class="text-decoration-none">Home</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'event_list' %}" class="text-decoration-none">Events</a></li>
+                <li class="breadcrumb-item active" aria-current="page">{{ event.title }}</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<!-- Event Banner and Basic Info -->
+<div class="row mb-5">
+    <div class="col-md-12">
+        <div class="event-banner" {% if event.banner_image %}style="background-image: url('{{ event.banner_image.url }}');"{% else %}style="background: linear-gradient(135deg, var(--dark-blue), var(--dark-purple));"{% endif %}>
+            {% if not event.banner_image %}
+            <div class="d-flex align-items-center justify-content-center h-100">
+                <i class="fas fa-calendar-alt fa-5x text-white opacity-25"></i>
+            </div>
+            {% endif %}
+            <div class="event-info">
+                <span class="badge bg-primary mb-2">{{ event.category.name }}</span>
+                {% if event.is_past_event %}
+                <span class="badge bg-secondary mb-2">Past Event</span>
+                {% elif event.status == 'cancelled' %}
+                <span class="badge bg-danger mb-2">Cancelled</span>
+                {% endif %}
+                <h1 class="display-5 fw-bold">{{ event.title }}</h1>
+                <div class="d-flex align-items-center mt-3">
+                    <i class="fas fa-user-circle fa-2x me-2 text-highlight"></i>
+                    <span>Organized by <strong>{{ event.organizer.get_full_name|default:event.organizer.username }}</strong></span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Event Details -->
+    <div class="col-lg-8">
+        <!-- Event Description -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h3 class="mb-0"><i class="fas fa-info-circle text-highlight me-2"></i>About This Event</h3>
+            </div>
+            <div class="card-body">
+                <div class="mb-4">
+                    {{ event.description|linebreaks }}
+                </div>
+                
+                <h4 class="mt-4 mb-3"><i class="fas fa-map-pin text-highlight me-2"></i>Location</h4>
+                <div class="d-flex align-items-start mb-4">
+                    <div class="event-detail-icon">
+                        <i class="fas fa-map-marker-alt text-highlight"></i>
+                    </div>
+                    <div>
+                        <h5 class="mb-1">{{ event.location }}</h5>
+                        <p class="text-muted mb-0">
+                            <a href="https://maps.google.com/?q={{ event.location|urlencode }}" target="_blank" class="text-decoration-none">
+                                <i class="fas fa-external-link-alt me-1"></i>View on Google Maps
+                            </a>
+                        </p>
+                    </div>
+                </div>
+                
+                <h4 class="mt-4 mb-3"><i class="fas fa-calendar text-highlight me-2"></i>Date & Time</h4>
+                <div class="row">
+                    <div class="col-md-6 mb-4">
+                        <div class="d-flex align-items-start">
+                            <div class="event-detail-icon">
+                                <i class="fas fa-hourglass-start text-highlight"></i>
+                            </div>
+                            <div>
+                                <h5 class="mb-1">Starts</h5>
+                                <p class="mb-0">{{ event.start_date|date:"l, F j, Y" }}</p>
+                                <p class="text-muted">{{ event.start_date|date:"g:i A" }}</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6 mb-4">
+                        <div class="d-flex align-items-start">
+                            <div class="event-detail-icon">
+                                <i class="fas fa-hourglass-end text-highlight"></i>
+                            </div>
+                            <div>
+                                <h5 class="mb-1">Ends</h5>
+                                <p class="mb-0">{{ event.end_date|date:"l, F j, Y" }}</p>
+                                <p class="text-muted">{{ event.end_date|date:"g:i A" }}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <h4 class="mt-2 mb-3"><i class="fas fa-share-alt text-highlight me-2"></i>Share This Event</h4>
+                <div>
+                    <a href="https://www.facebook.com/sharer/sharer.php?u={{ request.build_absolute_uri }}" target="_blank" class="share-btn share-facebook">
+                        <i class="fab fa-facebook-f"></i>
+                    </a>
+                    <a href="https://twitter.com/intent/tweet?text=Check out this event: {{ event.title }}&url={{ request.build_absolute_uri }}" target="_blank" class="share-btn share-twitter">
+                        <i class="fab fa-twitter"></i>
+                    </a>
+                    <a href="https://www.linkedin.com/shareArticle?mini=true&url={{ request.build_absolute_uri }}&title={{ event.title }}" target="_blank" class="share-btn share-linkedin">
+                        <i class="fab fa-linkedin-in"></i>
+                    </a>
+                    <a href="mailto:?subject=Check out this event: {{ event.title }}&body=I thought you might be interested in this event: {{ request.build_absolute_uri }}" class="share-btn share-email">
+                        <i class="fas fa-envelope"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Organizer Info -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h3 class="mb-0"><i class="fas fa-user text-highlight me-2"></i>About the Organizer</h3>
+            </div>
+            <div class="card-body">
+                <div class="d-flex">
+                    <div class="me-3">
+                        {% if event.organizer.profile.profile_picture %}
+                            <img src="{{ event.organizer.profile.profile_picture.url }}" alt="{{ event.organizer.username }}" class="rounded-circle" width="80" height="80">
+                        {% else %}
+                            <div class="rounded-circle d-flex align-items-center justify-content-center" style="width: 80px; height: 80px; background-color: var(--dark-blue);">
+                                <i class="fas fa-user fa-2x text-light"></i>
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div>
+                        <h4 class="mb-2">{{ event.organizer.get_full_name|default:event.organizer.username }}</h4>
+                        {% if event.organizer.profile.bio %}
+                            <p>{{ event.organizer.profile.bio|truncatewords:30 }}</p>
+                        {% else %}
+                            <p class="text-muted">No bio available</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Sidebar -->
+    <div class="col-lg-4">
+        <!-- Date Card -->
+        <div class="card mb-4">
+            <div class="card-body p-0">
+                <div class="event-date-large">
+                    <h4 class="mb-2">{{ event.start_date|date:"l, F j" }}</h4>
+                    <p class="mb-0">{{ event.start_date|date:"g:i A" }} - {{ event.end_date|date:"g:i A" }}</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Action Buttons -->
+        <div class="card mb-4">
+            <div class="card-body">
+                {% if is_organizer %}
+                    <div class="d-grid gap-2">
+                        <a href="{% url 'edit_event' event_id=event.id %}" class="btn btn-primary">
+                            <i class="fas fa-edit me-2"></i>Edit Event
+                        </a>
+                        <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#cancelEventModal">
+                            <i class="fas fa-times-circle me-2"></i>Cancel Event
+                        </button>
+                    </div>
+                {% elif event.is_past_event or event.status == 'cancelled' %}
+                    <div class="alert alert-secondary mb-0">
+                        <i class="fas fa-info-circle me-2"></i>
+                        {% if event.is_past_event %}
+                            This event has already taken place.
+                        {% else %}
+                            This event has been cancelled.
+                        {% endif %}
+                    </div>
+                {% elif has_tickets %}
+                    <div class="alert alert-success mb-3">
+                        <i class="fas fa-ticket-alt me-2"></i>You have tickets for this event!
+                    </div>
+                    <div class="d-grid">
+                        <a href="#your-tickets" class="btn btn-primary">
+                            <i class="fas fa-ticket-alt me-2"></i>View Your Tickets
+                        </a>
+                    </div>
+                {% else %}
+                    <div class="d-grid">
+                        <a href="#tickets" class="btn btn-highlight">
+                            <i class="fas fa-ticket-alt me-2"></i>Get Tickets
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Attendee Counter -->
+        <div class="card mb-4">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="event-detail-icon">
+                        <i class="fas fa-users text-highlight"></i>
+                    </div>
+                    <div>
+                        <h5 class="mb-1">Attendees</h5>
+                        {% if event.max_attendees > 0 %}
+                            <p class="mb-0">{{ event.tickets.count }} / {{ event.max_attendees }} spots filled</p>
+                            <div class="progress mt-2" style="height: 10px;">
+                                <!-- Calculate percentage in the view function instead of template -->
+                                <div class="progress-bar bg-highlight" role="progressbar" 
+                                    style="width: 50%;" 
+                                    aria-valuenow="{{ event.tickets.count }}" 
+                                    aria-valuemin="0" 
+                                    aria-valuemax="{{ event.max_attendees }}">
+                                </div>
+                            </div>
+                        {% else %}
+                            <p class="mb-0">{{ event.tickets.count }} attendees</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Available Tickets -->
+        {% if ticket_types and not event.is_past_event and event.status != 'cancelled' %}
+        <div class="card mb-4" id="tickets">
+            <div class="card-header">
+                <h3 class="mb-0"><i class="fas fa-ticket-alt text-highlight me-2"></i>Tickets</h3>
+            </div>
+            <div class="card-body">
+                {% if not user.is_authenticated %}
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>Please <a href="{% url 'login' %}?next={{ request.path }}" class="alert-link">log in</a> to purchase tickets.
+                    </div>
+                {% else %}
+                    <form method="post" action="{% url 'create_payment' %}">
+                        {% csrf_token %}
+                        <input type="hidden" name="event_id" value="{{ event.id }}">
+                        
+                        {% for ticket_type in ticket_types %}
+                        <div class="card ticket-card mb-3">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div>
+                                        <h5 class="mb-1">{{ ticket_type.name }}</h5>
+                                        <p class="text-muted small mb-2">{{ ticket_type.description|default:"" }}</p>
+                                        <h4 class="text-highlight">${{ ticket_type.price }}</h4>
+                                    </div>
+                                    <div>
+                                        {% if ticket_type.quantity_available > 0 %}
+                                        <select name="ticket_quantities[{{ ticket_type.id }}]" class="form-select">
+                                            <option value="0">0</option>
+                                            {% for i in "12345"|make_list %}
+                                                {% if forloop.counter <= ticket_type.quantity_available %}
+                                                <option value="{{ forloop.counter }}">{{ forloop.counter }}</option>
+                                                {% endif %}
+                                            {% endfor %}
+                                        </select>
+                                        {% else %}
+                                        <span class="badge bg-secondary">Sold Out</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                        
+                        <div class="mt-4">
+                            <button type="submit" class="btn btn-highlight w-100">
+                                <i class="fas fa-shopping-cart me-2"></i>Proceed to Checkout
+                            </button>
+                        </div>
+                    </form>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- Your Tickets (if purchased) -->
+        {% if has_tickets %}
+        <div class="card" id="your-tickets">
+            <div class="card-header">
+                <h3 class="mb-0"><i class="fas fa-ticket-alt text-highlight me-2"></i>Your Tickets</h3>
+            </div>
+            <div class="card-body">
+                {% for ticket in user_tickets %}
+                <div class="card mb-3">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <h5 class="mb-0">{{ ticket.ticket_type.name }}</h5>
+                            <span class="badge {% if ticket.status == 'confirmed' %}bg-success{% elif ticket.status == 'pending' %}bg-warning{% elif ticket.status == 'cancelled' %}bg-danger{% elif ticket.status == 'used' %}bg-secondary{% endif %}">
+                                {{ ticket.get_status_display }}
+                            </span>
+                        </div>
+                        <p class="mb-2 small">Ticket #: {{ ticket.ticket_code }}</p>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="text-muted small">Purchased: {{ ticket.purchase_date|date:"M d, Y" }}</span>
+                            <a href="#" class="btn btn-sm btn-outline-light">
+                                <i class="fas fa-download me-1"></i>Download
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Cancel Event Modal for Organizers -->
+{% if is_organizer %}
+<div class="modal fade" id="cancelEventModal" tabindex="-1" aria-labelledby="cancelEventModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="cancelEventModalLabel">Cancel Event</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to cancel this event? This action cannot be undone and all ticket holders will be notified.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <form method="post" action="{% url 'cancel_event' event_id=event.id %}">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger">Cancel Event</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,363 @@
+{% extends 'base.html' %}
+
+{% block title %}Create Event - EventHub{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<style>
+    .form-control-dark {
+        background-color: var(--dark-bg);
+        border-color: var(--border-color);
+        color: var(--text-color);
+    }
+    
+    .flatpickr-calendar {
+        background: var(--darker-bg);
+        box-shadow: 0 3px 13px rgba(0, 0, 0, 0.3);
+        border: 1px solid var(--border-color);
+    }
+    
+    .flatpickr-calendar.arrowTop:before {
+        border-bottom-color: var(--border-color);
+    }
+    
+    .flatpickr-calendar.arrowTop:after {
+        border-bottom-color: var(--darker-bg);
+    }
+    
+    .flatpickr-months {
+        background: var(--dark-blue);
+    }
+    
+    .flatpickr-current-month .flatpickr-monthDropdown-months, 
+    .flatpickr-current-month input.cur-year {
+        color: var(--text-color);
+    }
+    
+    .flatpickr-current-month .flatpickr-monthDropdown-months:hover, 
+    .flatpickr-current-month input.cur-year:hover {
+        background: rgba(255, 255, 255, 0.1);
+    }
+    
+    .flatpickr-day {
+        color: var(--text-color);
+    }
+    
+    .flatpickr-day.prevMonthDay, .flatpickr-day.nextMonthDay {
+        color: var(--text-muted);
+    }
+    
+    .flatpickr-day.selected, .flatpickr-day.startRange, .flatpickr-day.endRange {
+        background: var(--accent-color);
+        border-color: var(--accent-color);
+    }
+    
+    .flatpickr-day.selected:hover, .flatpickr-day.startRange:hover, .flatpickr-day.endRange:hover {
+        background: var(--highlight-color);
+        border-color: var(--highlight-color);
+    }
+    
+    .flatpickr-day:hover {
+        background: var(--dark-blue);
+        border-color: var(--dark-blue);
+    }
+    
+    .flatpickr-day.flatpickr-disabled, .flatpickr-day.flatpickr-disabled:hover {
+        color: rgba(255, 255, 255, 0.2);
+    }
+    
+    .flatpickr-time {
+        background: var(--darker-bg);
+        border-top: 1px solid var(--border-color);
+    }
+    
+    .flatpickr-time input {
+        color: var(--text-color);
+    }
+    
+    .flatpickr-time .flatpickr-am-pm {
+        color: var(--text-color);
+    }
+    
+    .flatpickr-time .flatpickr-am-pm:hover {
+        background: rgba(255, 255, 255, 0.1);
+    }
+    
+    .flatpickr-time .numInputWrapper:hover {
+        background: rgba(255, 255, 255, 0.1);
+    }
+    
+    .numInputWrapper span.arrowUp:after {
+        border-bottom-color: var(--text-color);
+    }
+    
+    .numInputWrapper span.arrowDown:after {
+        border-top-color: var(--text-color);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'home' %}" class="text-decoration-none">Home</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'my_events' %}" class="text-decoration-none">My Events</a></li>
+                <li class="breadcrumb-item active" aria-current="page">Create Event</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-12">
+        <h1><i class="fas fa-plus-circle text-highlight me-2"></i>Create New Event</h1>
+        <p class="text-muted">Fill in the details below to create your event</p>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h3 class="mb-0"><i class="fas fa-info-circle text-highlight me-2"></i>Event Information</h3>
+            </div>
+            <div class="card-body">
+                <form method="post" action="{% url 'create_event' %}" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    
+                    <!-- Basic Info Section -->
+                    <div class="mb-4">
+                        <h4 class="mb-3">Basic Information</h4>
+                        
+                        <div class="mb-3">
+                            <label for="title" class="form-label">Event Title <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control form-control-dark" id="title" name="title" required maxlength="200" placeholder="Give your event a clear, catchy title">
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="category" class="form-label">Category <span class="text-danger">*</span></label>
+                            <select class="form-select form-control-dark" id="category" name="category" required>
+                                <option value="" selected disabled>Select a category</option>
+                                {% for category in categories %}
+                                <option value="{{ category.id }}">{{ category.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="description" class="form-label">Description <span class="text-danger">*</span></label>
+                            <textarea class="form-control form-control-dark" id="description" name="description" rows="5" required placeholder="Describe your event, include what attendees can expect"></textarea>
+                        </div>
+                    </div>
+                    
+                    <!-- Location & Date Section -->
+                    <div class="mb-4">
+                        <h4 class="mb-3">Location & Date</h4>
+                        
+                        <div class="mb-3">
+                            <label for="location" class="form-label">Location <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control form-control-dark" id="location" name="location" required maxlength="255" placeholder="Venue name or address">
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="start_date" class="form-label">Start Date & Time <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control form-control-dark" id="start_date" name="start_date" required placeholder="Select date and time">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="end_date" class="form-label">End Date & Time <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control form-control-dark" id="end_date" name="end_date" required placeholder="Select date and time">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Capacity & Visibility -->
+                    <div class="mb-4">
+                        <h4 class="mb-3">Capacity & Visibility</h4>
+                        
+                        <div class="mb-3">
+                            <label for="max_attendees" class="form-label">Maximum Attendees</label>
+                            <input type="number" class="form-control form-control-dark" id="max_attendees" name="max_attendees" min="0" value="0" placeholder="0 for unlimited">
+                            <div class="form-text text-muted">Set to 0 for unlimited capacity</div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="status" class="form-label">Event Status <span class="text-danger">*</span></label>
+                            <select class="form-select form-control-dark" id="status" name="status" required>
+                                <option value="draft">Draft - Only visible to you</option>
+                                <option value="published">Published - Visible to everyone</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <!-- Image Upload -->
+                    <div class="mb-4">
+                        <h4 class="mb-3">Event Image</h4>
+                        
+                        <div class="mb-3">
+                            <label for="banner_image" class="form-label">Banner Image</label>
+                            <input type="file" class="form-control form-control-dark" id="banner_image" name="banner_image" accept="image/*">
+                            <div class="form-text text-muted">Recommended size: 1200 x 600 pixels. Max file size: 5MB</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Ticket Types Section -->
+                    <div class="mb-4">
+                        <h4 class="mb-3">Ticket Types</h4>
+                        <p class="text-muted mb-3">You can add ticket types after creating the event</p>
+                        
+                        <div id="ticket-types-container">
+                            <div class="card mb-3">
+                                <div class="card-body">
+                                    <div class="row mb-3">
+                                        <div class="col-md-6">
+                                            <label for="ticket_name_1" class="form-label">Ticket Name <span class="text-danger">*</span></label>
+                                            <input type="text" class="form-control form-control-dark" id="ticket_name_1" name="ticket_name[]" placeholder="e.g. General Admission" required>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label for="ticket_price_1" class="form-label">Price <span class="text-danger">*</span></label>
+                                            <div class="input-group">
+                                                <span class="input-group-text">$</span>
+                                                <input type="number" class="form-control form-control-dark" id="ticket_price_1" name="ticket_price[]" min="0" step="0.01" placeholder="0.00" required>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="row mb-3">
+                                        <div class="col-md-6">
+                                            <label for="ticket_quantity_1" class="form-label">Quantity Available <span class="text-danger">*</span></label>
+                                            <input type="number" class="form-control form-control-dark" id="ticket_quantity_1" name="ticket_quantity[]" min="0" placeholder="0 for unlimited" required>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label for="ticket_description_1" class="form-label">Description</label>
+                                            <input type="text" class="form-control form-control-dark" id="ticket_description_1" name="ticket_description[]" placeholder="Optional description">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <button type="button" id="add-ticket-type" class="btn btn-outline-light">
+                            <i class="fas fa-plus me-2"></i>Add Another Ticket Type
+                        </button>
+                    </div>
+                    
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
+                        <a href="{% url 'my_events' %}" class="btn btn-outline-light">Cancel</a>
+                        <button type="submit" class="btn btn-success">
+                            <i class="fas fa-check me-2"></i>Create Event
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4">
+        <div class="card mb-4 sticky-top" style="top: 20px; z-index: 1;">
+            <div class="card-header">
+                <h3 class="mb-0"><i class="fas fa-lightbulb text-highlight me-2"></i>Tips</h3>
+            </div>
+            <div class="card-body">
+                <h5>Creating a Successful Event</h5>
+                <ul class="mb-4">
+                    <li>Use a descriptive, engaging title</li>
+                    <li>Provide clear details about what attendees can expect</li>
+                    <li>Add an eye-catching banner image</li>
+                    <li>Set appropriate ticket prices</li>
+                    <li>Clearly communicate the location and time</li>
+                </ul>
+                
+                <h5>After Creating Your Event</h5>
+                <ul>
+                    <li>Share it on social media</li>
+                    <li>Send invitations to potential attendees</li>
+                    <li>Monitor registrations and ticket sales</li>
+                    <li>Update event details if necessary</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize datetime pickers
+        flatpickr("#start_date", {
+            enableTime: true,
+            dateFormat: "Y-m-d H:i",
+            minDate: "today",
+            time_24hr: false
+        });
+        
+        flatpickr("#end_date", {
+            enableTime: true,
+            dateFormat: "Y-m-d H:i",
+            minDate: "today",
+            time_24hr: false
+        });
+        
+        // Add ticket type functionality
+        let ticketTypeCount = 1;
+        
+        document.getElementById('add-ticket-type').addEventListener('click', function() {
+            ticketTypeCount++;
+            
+            const ticketTypeHTML = `
+                <div class="card mb-3">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h5 class="mb-0">Ticket Type ${ticketTypeCount}</h5>
+                            <button type="button" class="btn btn-sm btn-outline-danger remove-ticket-type">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="ticket_name_${ticketTypeCount}" class="form-label">Ticket Name <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control form-control-dark" id="ticket_name_${ticketTypeCount}" name="ticket_name[]" placeholder="e.g. VIP Pass" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="ticket_price_${ticketTypeCount}" class="form-label">Price <span class="text-danger">*</span></label>
+                                <div class="input-group">
+                                    <span class="input-group-text">$</span>
+                                    <input type="number" class="form-control form-control-dark" id="ticket_price_${ticketTypeCount}" name="ticket_price[]" min="0" step="0.01" placeholder="0.00" required>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="ticket_quantity_${ticketTypeCount}" class="form-label">Quantity Available <span class="text-danger">*</span></label>
+                                <input type="number" class="form-control form-control-dark" id="ticket_quantity_${ticketTypeCount}" name="ticket_quantity[]" min="0" placeholder="0 for unlimited" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="ticket_description_${ticketTypeCount}" class="form-label">Description</label>
+                                <input type="text" class="form-control form-control-dark" id="ticket_description_${ticketTypeCount}" name="ticket_description[]" placeholder="Optional description">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            const ticketContainer = document.getElementById('ticket-types-container');
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = ticketTypeHTML;
+            
+            while (tempDiv.firstChild) {
+                ticketContainer.appendChild(tempDiv.firstChild);
+            }
+            
+            // Add event listeners to remove buttons
+            document.querySelectorAll('.remove-ticket-type').forEach(button => {
+                button.addEventListener('click', function() {
+                    this.closest('.card').remove();
+                });
+            });
+        });
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,297 @@
+{% extends 'base.html' %}
+
+{% block title %}My Profile - EventHub{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'home' %}" class="text-decoration-none">Home</a></li>
+                <li class="breadcrumb-item active" aria-current="page">My Profile</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-3 mb-4">
+        <div class="card">
+            <div class="card-body text-center">
+                {% if user.profile.profile_picture %}
+                    <img src="{{ user.profile.profile_picture.url }}" alt="{{ user.username }}" class="img-fluid rounded-circle mb-3" style="width: 150px; height: 150px; object-fit: cover;">
+                {% else %}
+                    <div class="rounded-circle mx-auto mb-3 d-flex align-items-center justify-content-center" style="width: 150px; height: 150px; background: linear-gradient(135deg, var(--dark-blue), var(--dark-purple));">
+                        <i class="fas fa-user fa-4x text-white opacity-75"></i>
+                    </div>
+                {% endif %}
+                <h4>{{ user.get_full_name|default:user.username }}</h4>
+                <p class="text-muted">{{ user.email }}</p>
+                
+                <div class="d-grid mt-3">
+                    <button type="button" class="btn btn-outline-light" data-bs-toggle="modal" data-bs-target="#uploadPhotoModal">
+                        <i class="fas fa-camera me-2"></i>Update Photo
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-cog text-highlight me-2"></i>Account Links</h5>
+            </div>
+            <div class="list-group list-group-flush">
+                <a href="{% url 'profile' %}" class="list-group-item active" style="background-color: var(--dark-blue); border-color: var(--border-color);">
+                    <i class="fas fa-user me-2"></i>Profile Information
+                </a>
+                <a href="{% url 'my_events' %}" class="list-group-item">
+                    <i class="fas fa-calendar-alt me-2"></i>My Events
+                </a>
+                <a href="#" class="list-group-item">
+                    <i class="fas fa-ticket-alt me-2"></i>My Tickets
+                </a>
+                <a href="#" class="list-group-item">
+                    <i class="fas fa-credit-card me-2"></i>Payment Methods
+                </a>
+                <a href="#" class="list-group-item">
+                    <i class="fas fa-bell me-2"></i>Notifications
+                </a>
+                <a href="#" class="list-group-item">
+                    <i class="fas fa-shield-alt me-2"></i>Account Security
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-9">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h3 class="mb-0"><i class="fas fa-user text-highlight me-2"></i>Profile Information</h3>
+            </div>
+            <div class="card-body">
+                <form method="post" action="{% url 'update_profile' %}">
+                    {% csrf_token %}
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="first_name" class="form-label">First Name</label>
+                            <input type="text" class="form-control" id="first_name" name="first_name" value="{{ user.first_name }}">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="last_name" class="form-label">Last Name</label>
+                            <input type="text" class="form-control" id="last_name" name="last_name" value="{{ user.last_name }}">
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="email" class="form-label">Email</label>
+                        <input type="email" class="form-control" id="email" name="email" value="{{ user.email }}" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="phone_number" class="form-label">Phone Number</label>
+                        <input type="tel" class="form-control" id="phone_number" name="phone_number" value="{{ user.profile.phone_number|default:'' }}">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="address" class="form-label">Address</label>
+                        <input type="text" class="form-control" id="address" name="address" value="{{ user.profile.address|default:'' }}">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="bio" class="form-label">Bio</label>
+                        <textarea class="form-control" id="bio" name="bio" rows="4">{{ user.profile.bio|default:'' }}</textarea>
+                        <div class="form-text text-muted">Tell us a little about yourself</div>
+                    </div>
+                    
+                    <div class="d-grid d-md-flex justify-content-md-end">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-2"></i>Save Changes
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <div class="card mb-4">
+            <div class="card-header">
+                <h3 class="mb-0"><i class="fas fa-link text-highlight me-2"></i>Social Accounts</h3>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between align-items-center p-3 rounded" style="background-color: #3b5998;">
+                        <div class="d-flex align-items-center">
+                            <i class="fab fa-facebook-f fa-2x me-3"></i>
+                            <span>Facebook</span>
+                        </div>
+                        {% if user.social_auth.facebook %}
+                            <a href="#" class="btn btn-sm btn-outline-light">Disconnect</a>
+                        {% else %}
+                            <a href="{% url 'social:begin' 'facebook' %}" class="btn btn-sm btn-outline-light">Connect</a>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between align-items-center p-3 rounded" style="background-color: #db4437;">
+                        <div class="d-flex align-items-center">
+                            <i class="fab fa-google fa-2x me-3"></i>
+                            <span>Google</span>
+                        </div>
+                        {% if user.social_auth.google-oauth2 %}
+                            <a href="#" class="btn btn-sm btn-outline-light">Disconnect</a>
+                        {% else %}
+                            <a href="{% url 'social:begin' 'google-oauth2' %}" class="btn btn-sm btn-outline-light">Connect</a>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <div class="form-text text-muted mt-3">
+                    <i class="fas fa-info-circle me-1"></i> Connecting social accounts allows for easier login
+                </div>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header bg-danger bg-opacity-25">
+                <h3 class="mb-0"><i class="fas fa-exclamation-triangle text-danger me-2"></i>Danger Zone</h3>
+            </div>
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h5>Change Password</h5>
+                        <p class="text-muted mb-0">Update your password to improve account security</p>
+                    </div>
+                    <button type="button" class="btn btn-outline-light" data-bs-toggle="modal" data-bs-target="#changePasswordModal">
+                        <i class="fas fa-key me-2"></i>Change Password
+                    </button>
+                </div>
+                
+                <hr>
+                
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h5>Delete Account</h5>
+                        <p class="text-muted mb-0">Permanently delete your account and all associated data</p>
+                    </div>
+                    <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteAccountModal">
+                        <i class="fas fa-trash-alt me-2"></i>Delete Account
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Upload Photo Modal -->
+<div class="modal fade" id="uploadPhotoModal" tabindex="-1" aria-labelledby="uploadPhotoModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="uploadPhotoModalLabel">Update Profile Picture</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="post" action="{% url 'update_profile_picture' %}" enctype="multipart/form-data">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="profile_picture" class="form-label">Select Image</label>
+                        <input type="file" class="form-control" id="profile_picture" name="profile_picture" accept="image/*" required>
+                        <div class="form-text">Recommended: Square image, at least 300x300 pixels</div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Upload</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Change Password Modal -->
+<div class="modal fade" id="changePasswordModal" tabindex="-1" aria-labelledby="changePasswordModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="changePasswordModalLabel">Change Password</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="post" action="{% url 'change_password' %}">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="current_password" class="form-label">Current Password</label>
+                        <input type="password" class="form-control" id="current_password" name="current_password" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="new_password1" class="form-label">New Password</label>
+                        <input type="password" class="form-control" id="new_password1" name="new_password1" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="new_password2" class="form-label">Confirm New Password</label>
+                        <input type="password" class="form-control" id="new_password2" name="new_password2" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Change Password</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Account Modal -->
+<div class="modal fade" id="deleteAccountModal" tabindex="-1" aria-labelledby="deleteAccountModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteAccountModalLabel">Delete Account</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-danger">
+                    <i class="fas fa-exclamation-triangle me-2"></i>Warning: This action cannot be undone.
+                </div>
+                <p>Deleting your account will:</p>
+                <ul>
+                    <li>Remove all your personal information</li>
+                    <li>Cancel all your upcoming tickets</li>
+                    <li>Remove your access to organized events</li>
+                </ul>
+                <p>Are you absolutely sure you want to proceed?</p>
+                <div class="mb-3">
+                    <label for="confirm_delete" class="form-label">Type "DELETE" to confirm</label>
+                    <input type="text" class="form-control" id="confirm_delete" name="confirm_delete" placeholder="DELETE" required>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form method="post" action="{% url 'delete_account' %}">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger" id="delete-account-btn" disabled>Delete My Account</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Delete account confirmation
+        const confirmDelete = document.getElementById('confirm_delete');
+        const deleteAccountBtn = document.getElementById('delete-account-btn');
+        
+        confirmDelete.addEventListener('input', function() {
+            if (this.value === 'DELETE') {
+                deleteAccountBtn.disabled = false;
+            } else {
+                deleteAccountBtn.disabled = true;
+            }
+        });
+    });
+</script>
+{% endblock %}

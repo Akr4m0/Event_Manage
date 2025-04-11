@@ -1,0 +1,183 @@
+{% extends 'base.html' %}
+
+{% block title %}My Events - EventHub{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'home' %}" class="text-decoration-none">Home</a></li>
+                <li class="breadcrumb-item active" aria-current="page">My Events</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<!-- Tabs for different sections -->
+<ul class="nav nav-tabs mb-4" id="myEventsTab" role="tablist">
+    <li class="nav-item" role="presentation">
+        <button class="nav-link active" id="organized-tab" data-bs-toggle="tab" data-bs-target="#organized" type="button" role="tab" aria-controls="organized" aria-selected="true">
+            <i class="fas fa-calendar-check me-2"></i>Events I'm Organizing
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="attending-tab" data-bs-toggle="tab" data-bs-target="#attending" type="button" role="tab" aria-controls="attending" aria-selected="false">
+            <i class="fas fa-ticket-alt me-2"></i>Events I'm Attending
+        </button>
+    </li>
+</ul>
+
+<div class="tab-content" id="myEventsTabContent">
+    <!-- Events Organized by User -->
+    <div class="tab-pane fade show active" id="organized" role="tabpanel" aria-labelledby="organized-tab">
+        <div class="row mb-4">
+            <div class="col-md-8">
+                <h2><i class="fas fa-calendar-check text-highlight me-2"></i>Events You're Organizing</h2>
+            </div>
+            <div class="col-md-4 text-end">
+                <a href="{% url 'create_event' %}" class="btn btn-success">
+                    <i class="fas fa-plus-circle me-2"></i>Create New Event
+                </a>
+            </div>
+        </div>
+        
+        {% if organized_events %}
+            <div class="row">
+                {% for event in organized_events %}
+                    <div class="col-md-6 col-lg-4 mb-4">
+                        <div class="card h-100">
+                            {% if event.banner_image %}
+                                <img src="{{ event.banner_image.url }}" class="card-img-top" alt="{{ event.title }}">
+                            {% else %}
+                                <div class="card-img-top bg-dark text-center py-5" style="background: linear-gradient(135deg, var(--dark-blue), var(--dark-purple));">
+                                    <i class="fas fa-calendar-alt fa-4x text-white opacity-50"></i>
+                                </div>
+                            {% endif %}
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                    <div class="date-badge">
+                                        <i class="far fa-calendar-alt me-2"></i>{{ event.start_date|date:"M d, Y" }}
+                                    </div>
+                                    <span class="badge {% if event.status == 'published' %}bg-success{% elif event.status == 'draft' %}bg-secondary{% elif event.status == 'cancelled' %}bg-danger{% elif event.status == 'completed' %}bg-info{% endif %}">
+                                        {{ event.get_status_display }}
+                                    </span>
+                                </div>
+                                <h5 class="card-title">{{ event.title }}</h5>
+                                <p class="card-text text-muted">{{ event.description|truncatechars:80 }}</p>
+                                <div class="d-flex align-items-center mb-2">
+                                    <i class="fas fa-map-marker-alt text-highlight me-2"></i>
+                                    <span>{{ event.location }}</span>
+                                </div>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <i class="fas fa-users text-highlight me-2"></i>
+                                        <span>{{ event.tickets.count }} attendees</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="card-footer">
+                                <div class="d-flex justify-content-between">
+                                    <a href="{% url 'event_detail' event_id=event.id %}" class="btn btn-primary">
+                                        <i class="fas fa-eye me-2"></i>View
+                                    </a>
+                                    <a href="{% url 'edit_event' event_id=event.id %}" class="btn btn-outline-light">
+                                        <i class="fas fa-edit me-2"></i>Edit
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="card">
+                <div class="card-body text-center py-5">
+                    <i class="fas fa-calendar-plus fa-4x mb-3 text-muted"></i>
+                    <h4>You haven't organized any events yet</h4>
+                    <p class="text-muted">Start by creating your first event!</p>
+                    <a href="{% url 'create_event' %}" class="btn btn-success mt-2">
+                        <i class="fas fa-plus-circle me-2"></i>Create Event
+                    </a>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+    
+    <!-- Events User is Attending -->
+    <div class="tab-pane fade" id="attending" role="tabpanel" aria-labelledby="attending-tab">
+        <div class="row mb-4">
+            <div class="col-md-12">
+                <h2><i class="fas fa-ticket-alt text-highlight me-2"></i>Events You're Attending</h2>
+            </div>
+        </div>
+        
+        {% if attended_events %}
+            <div class="row">
+                {% for event_data in attended_events %}
+                    <div class="col-md-6 mb-4">
+                        <div class="card h-100">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <h5 class="mb-0">{{ event_data.event.title }}</h5>
+                                <span class="badge {% if event_data.event.is_past_event %}bg-secondary{% else %}bg-success{% endif %}">
+                                    {% if event_data.event.is_past_event %}Past{% else %}Upcoming{% endif %}
+                                </span>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <div class="d-flex align-items-center mb-2">
+                                        <i class="fas fa-calendar-day text-highlight me-2"></i>
+                                        <span>{{ event_data.event.start_date|date:"l, F j, Y" }}</span>
+                                    </div>
+                                    <div class="d-flex align-items-center mb-2">
+                                        <i class="fas fa-clock text-highlight me-2"></i>
+                                        <span>{{ event_data.event.start_date|date:"g:i A" }} - {{ event_data.event.end_date|date:"g:i A" }}</span>
+                                    </div>
+                                    <div class="d-flex align-items-center">
+                                        <i class="fas fa-map-marker-alt text-highlight me-2"></i>
+                                        <span>{{ event_data.event.location }}</span>
+                                    </div>
+                                </div>
+                                
+                                <h6 class="mt-4 mb-3"><i class="fas fa-ticket-alt text-highlight me-2"></i>Your Tickets:</h6>
+                                
+                                {% for ticket in event_data.tickets %}
+                                    <div class="card mb-2 ticket-card">
+                                        <div class="card-body py-2">
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <div>
+                                                    <strong>{{ ticket.ticket_type.name }}</strong>
+                                                    <div class="small text-muted">{{ ticket.ticket_code|truncatechars:12 }}</div>
+                                                </div>
+                                                <span class="badge {% if ticket.status == 'confirmed' %}bg-success{% elif ticket.status == 'pending' %}bg-warning{% elif ticket.status == 'cancelled' %}bg-danger{% elif ticket.status == 'used' %}bg-secondary{% endif %}">
+                                                    {{ ticket.get_status_display }}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                            <div class="card-footer">
+                                <a href="{% url 'event_detail' event_id=event_data.event.id %}" class="btn btn-primary w-100">
+                                    <i class="fas fa-info-circle me-2"></i>View Event Details
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="card">
+                <div class="card-body text-center py-5">
+                    <i class="fas fa-ticket-alt fa-4x mb-3 text-muted"></i>
+                    <h4>You haven't purchased tickets to any events</h4>
+                    <p class="text-muted">Browse events and get tickets to see them here!</p>
+                    <a href="{% url 'event_list' %}" class="btn btn-primary mt-2">
+                        <i class="fas fa-search me-2"></i>Browse Events
+                    </a>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
