@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 
 from pathlib import Path
 import os
+import sys
 from datetime import timedelta
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -97,6 +98,20 @@ DATABASES = {
     }
 }
 
+# For testing
+if 'test' in sys.argv:
+    PASSWORD_HASHERS = [
+        'django.contrib.auth.hashers.MD5PasswordHasher',
+    ]
+    
+    # Use a faster database for testing
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': ':memory:',
+        }
+    }
+
 
 # Password validation
 # https://docs.djangoproject.com/en/5.1/ref/settings/#auth-password-validators
@@ -169,8 +184,8 @@ AUTHENTICATION_BACKENDS = (
 )
 
 # Social Auth settings - you'll need to replace these with your actual keys
-SOCIAL_AUTH_GOOGLE_OAUTH2_KEY = ''  # Google Consumer Key
-SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET = ''  # Google Consumer Secret
+SOCIAL_AUTH_GOOGLE_OAUTH2_KEY = ''  # Google Client ID
+SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET = ''  # Google Client Secret
 
 SOCIAL_AUTH_FACEBOOK_KEY = ''  # Facebook App ID
 SOCIAL_AUTH_FACEBOOK_SECRET = ''  # Facebook App Secret
@@ -187,9 +202,16 @@ SOCIAL_AUTH_PIPELINE = (
     'social_core.pipeline.social_auth.associate_user',
     'social_core.pipeline.social_auth.load_extra_data',
     'social_core.pipeline.user.user_details',
+    'users.pipeline.create_user_profile',  # Custom pipeline to create profile
 )
 
 # Login/Logout URLs
 LOGIN_URL = 'login'
 LOGOUT_URL = 'logout'
 LOGIN_REDIRECT_URL = 'home'
+LOGOUT_REDIRECT_URL = 'home'
+
+# Stripe Settings
+STRIPE_PUBLISHABLE_KEY = ''  # Stripe publishable key
+STRIPE_SECRET_KEY = ''  # Stripe secret key
+STRIPE_WEBHOOK_SECRET = ''  # Stripe webhook secret
