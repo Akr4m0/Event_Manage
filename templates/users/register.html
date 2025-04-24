@@ -1,0 +1,189 @@
+{% extends 'base.html' %}
+
+{% block title %}Register - EventHub{% endblock %}
+
+{% block extra_css %}
+<style>
+    .divider-text {
+        position: relative;
+        text-align: center;
+        margin: 20px 0;
+    }
+    
+    .divider-text span {
+        padding: 0 15px;
+        position: relative;
+        z-index: 2;
+        background-color: var(--dark-bg);
+    }
+    
+    .divider-text:after {
+        content: "";
+        position: absolute;
+        width: 100%;
+        border-bottom: 1px solid var(--border-color);
+        top: 50%;
+        left: 0;
+        z-index: 1;
+    }
+    
+    .social-button {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: 12px;
+        border-radius: 5px;
+        color: white;
+        font-weight: 500;
+        transition: all 0.3s ease;
+        margin-bottom: 15px;
+        text-decoration: none;
+    }
+    
+    .social-button:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        color: white;
+    }
+    
+    .social-button i {
+        font-size: 20px;
+        margin-right: 10px;
+    }
+    
+    .google-button {
+        background-color: #db4437;
+    }
+    
+    .facebook-button {
+        background-color: #3b5998;
+    }
+    
+    .register-image {
+        background: linear-gradient(135deg, rgba(25, 40, 65, 0.8), rgba(46, 26, 71, 0.8)), url('https://via.placeholder.com/600');
+        background-size: cover;
+        background-position: center;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+        color: white;
+        padding: 2rem;
+        border-radius: 5px 0 0 5px;
+    }
+    
+    @media (max-width: 767.98px) {
+        .register-image {
+            height: 200px;
+            border-radius: 5px 5px 0 0;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center mt-5">
+    <div class="col-md-10 col-lg-8">
+        <div class="card overflow-hidden">
+            <div class="row g-0">
+                <div class="col-md-5 d-none d-md-block">
+                    <div class="register-image">
+                        <div class="text-center">
+                            <i class="fas fa-user-plus fa-4x mb-3 opacity-75"></i>
+                            <h2 class="mb-3">Join EventHub</h2>
+                            <p>Create an account to discover amazing events or create your own!</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-7">
+                    <div class="card-body p-4">
+                        <h3 class="card-title text-center mb-4">
+                            <i class="fas fa-user-plus text-highlight me-2"></i>Create Account
+                        </h3>
+                        
+                        {% if messages %}
+                            {% for message in messages %}
+                                <div class="alert alert-{{ message.tags }} alert-dismissible fade show mb-4" role="alert">
+                                    {{ message }}
+                                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                                </div>
+                            {% endfor %}
+                        {% endif %}
+                        
+                        <!-- Social Register Buttons -->
+                        <div class="mb-4">
+                            <a href="{% url 'social:begin' 'google-oauth2' %}" class="social-button google-button">
+                                <i class="fab fa-google"></i> Sign up with Google
+                            </a>
+                            <a href="{% url 'social:begin' 'facebook' %}" class="social-button facebook-button">
+                                <i class="fab fa-facebook-f"></i> Sign up with Facebook
+                            </a>
+                        </div>
+                        
+                        <div class="divider-text">
+                            <span class="text-muted">or sign up with email</span>
+                        </div>
+                        
+                        <!-- Registration Form -->
+                        <form method="post" action="{% url 'register' %}">
+                            {% csrf_token %}
+                            
+                            {% if form.errors %}
+                                <div class="alert alert-danger">
+                                    <p>Please correct the errors below:</p>
+                                    {{ form.errors }}
+                                </div>
+                            {% endif %}
+                            
+                            <div class="mb-3">
+                                <label for="{{ form.username.id_for_label }}" class="form-label">Username</label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="fas fa-user"></i></span>
+                                    {{ form.username }}
+                                </div>
+                                {% if form.username.errors %}
+                                    <div class="text-danger">{{ form.username.errors }}</div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="{{ form.password1.id_for_label }}" class="form-label">Password</label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="fas fa-lock"></i></span>
+                                    {{ form.password1 }}
+                                </div>
+                                <div class="form-text text-muted">{{ form.password1.help_text }}</div>
+                                {% if form.password1.errors %}
+                                    <div class="text-danger">{{ form.password1.errors }}</div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="{{ form.password2.id_for_label }}" class="form-label">Confirm Password</label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="fas fa-lock"></i></span>
+                                    {{ form.password2 }}
+                                </div>
+                                {% if form.password2.errors %}
+                                    <div class="text-danger">{{ form.password2.errors }}</div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="d-grid mb-3">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-user-plus me-2"></i>Create Account
+                                </button>
+                            </div>
+                        </form>
+                        
+                        <div class="text-center">
+                            <p>Already have an account? <a href="{% url 'login' %}" class="text-decoration-none">Sign in</a></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
