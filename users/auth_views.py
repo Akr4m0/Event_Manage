@@ -51,6 +51,8 @@ def register_view(request):
         form = UserCreationForm(request.POST)
         if form.is_valid():
             user = form.save()
+            # Explicitly set the authentication backend to fix the multi-backend error
+            user.backend = 'django.contrib.auth.backends.ModelBackend'
             login(request, user)
             messages.success(request, "Registration successful.")
             return redirect('home')

@@ -1,0 +1,114 @@
+{% extends 'base.html' %}
+
+{% block title %}My Tickets - EventHub{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'home' %}" class="text-decoration-none">Home</a></li>
+                <li class="breadcrumb-item active" aria-current="page">My Tickets</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-12">
+        <h1><i class="fas fa-ticket-alt text-highlight me-2"></i>My Tickets</h1>
+        <p class="text-muted">View and manage your purchased tickets</p>
+    </div>
+</div>
+
+{% if tickets_by_event %}
+    {% for event_data in tickets_by_event %}
+        <div class="card mb-4">
+            <div class="card-header">
+                <h3 class="mb-0">
+                    <i class="fas fa-calendar-alt text-highlight me-2"></i>
+                    {{ event_data.event.title }}
+                </h3>
+            </div>
+            <div class="card-body">
+                <div class="row mb-3">
+                    <div class="col-md-4">
+                        <div class="date-badge mb-2">
+                            <i class="far fa-calendar-alt me-2"></i>{{ event_data.event.start_date|date:"M d, Y" }}
+                        </div>
+                        <div class="d-flex align-items-center mb-2">
+                            <i class="fas fa-clock text-highlight me-2"></i>
+                            <span>{{ event_data.event.start_date|date:"g:i A" }} - {{ event_data.event.end_date|date:"g:i A" }}</span>
+                        </div>
+                        <div class="d-flex align-items-center">
+                            <i class="fas fa-map-marker-alt text-highlight me-2"></i>
+                            <span>{{ event_data.event.location }}</span>
+                        </div>
+                    </div>
+                    <div class="col-md-8">
+                        <a href="{% url 'event_detail' event_id=event_data.event.id %}" class="btn btn-outline-light mb-2">
+                            <i class="fas fa-info-circle me-2"></i>View Event Details
+                        </a>
+                    </div>
+                </div>
+
+                <h4 class="mt-4 mb-3"><i class="fas fa-ticket-alt text-highlight me-2"></i>Your Tickets</h4>
+                
+                <div class="table-responsive">
+                    <table class="table table-dark">
+                        <thead>
+                            <tr>
+                                <th>Ticket Type</th>
+                                <th>Code</th>
+                                <th>Purchase Date</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for ticket in event_data.tickets %}
+                                <tr>
+                                    <td>{{ ticket.ticket_type.name }}</td>
+                                    <td><code>{{ ticket.ticket_code|truncatechars:12 }}</code></td>
+                                    <td>{{ ticket.purchase_date|date:"M d, Y" }}</td>
+                                    <td>
+                                        <span class="badge {% if ticket.status == 'confirmed' %}bg-success{% elif ticket.status == 'pending' %}bg-warning{% elif ticket.status == 'cancelled' %}bg-danger{% elif ticket.status == 'used' %}bg-secondary{% endif %}">
+                                            {{ ticket.get_status_display }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <div class="btn-group">
+                                            <a href="{% url 'ticket_detail' ticket_id=ticket.ticket_code %}" class="btn btn-sm btn-outline-light">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                            <a href="{% url 'download_ticket' ticket_id=ticket.ticket_code %}" class="btn btn-sm btn-outline-light">
+                                                <i class="fas fa-download"></i>
+                                            </a>
+                                            {% if ticket.status == 'confirmed' and not ticket.checked_in %}
+                                                <a href="{% url 'transfer_ticket' ticket_id=ticket.ticket_code %}" class="btn btn-sm btn-outline-light">
+                                                    <i class="fas fa-exchange-alt"></i>
+                                                </a>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    {% endfor %}
+{% else %}
+    <div class="card">
+        <div class="card-body text-center py-5">
+            <i class="fas fa-ticket-alt fa-4x mb-3 text-muted"></i>
+            <h4>You haven't purchased any tickets yet</h4>
+            <p class="text-muted">Browse events and purchase tickets to see them here!</p>
+            <a href="{% url 'event_list' %}" class="btn btn-primary mt-2">
+                <i class="fas fa-search me-2"></i>Browse Events
+            </a>
+        </div>
+    </div>
+{% endif %}
+{% endblock %}

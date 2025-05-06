@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ticket for {{ event.title }}</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 0;
+        }
+        body {
+            font-family: 'Helvetica', 'Arial', sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f8f9fa;
+        }
+        .ticket-container {
+            width: 100%;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        .ticket {
+            background: linear-gradient(135deg, #192841, #2e1a47);
+            color: white;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+        }
+        .ticket-header {
+            background-color: rgba(0, 0, 0, 0.2);
+            padding: 20px;
+            text-align: center;
+            border-bottom: 2px dashed rgba(255, 255, 255, 0.2);
+        }
+        .ticket-title {
+            font-size: 24px;
+            font-weight: bold;
+            margin: 0;
+        }
+        .ticket-event {
+            font-size: 18px;
+            opacity: 0.8;
+            margin: 5px 0 0;
+        }
+        .ticket-body {
+            padding: 20px;
+            display: flex;
+        }
+        .ticket-info {
+            flex: 1;
+        }
+        .ticket-qr {
+            text-align: center;
+            margin-left: 20px;
+            padding: 15px;
+            background-color: white;
+            border-radius: 10px;
+        }
+        .ticket-qr img {
+            max-width: 150px;
+            height: auto;
+        }
+        .ticket-footer {
+            background-color: rgba(0, 0, 0, 0.2);
+            padding: 15px;
+            text-align: center;
+            font-size: 14px;
+            border-top: 2px dashed rgba(255, 255, 255, 0.2);
+        }
+        .ticket-detail {
+            margin-bottom: 15px;
+        }
+        .ticket-detail-label {
+            display: block;
+            font-size: 14px;
+            text-transform: uppercase;
+            opacity: 0.7;
+            margin-bottom: 5px;
+        }
+        .ticket-detail-value {
+            font-size: 16px;
+            font-weight: 500;
+        }
+        .terms {
+            margin-top: 20px;
+            padding: 20px;
+            font-size: 12px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="ticket-container">
+        <div class="ticket">
+            <div class="ticket-header">
+                <h1 class="ticket-title">{{ ticket.ticket_type.name }}</h1>
+                <p class="ticket-event">{{ event.title }}</p>
+            </div>
+            
+            <div class="ticket-body">
+                <div class="ticket-info">
+                    <div class="ticket-detail">
+                        <span class="ticket-detail-label">Event Date</span>
+                        <div class="ticket-detail-value">
+                            {{ event.start_date|date:"l, F j, Y" }}
+                        </div>
+                    </div>
+                    
+                    <div class="ticket-detail">
+                        <span class="ticket-detail-label">Event Time</span>
+                        <div class="ticket-detail-value">
+                            {{ event.start_date|date:"g:i A" }} - {{ event.end_date|date:"g:i A" }}
+                        </div>
+                    </div>
+                    
+                    <div class="ticket-detail">
+                        <span class="ticket-detail-label">Location</span>
+                        <div class="ticket-detail-value">
+                            {{ event.location }}
+                        </div>
+                    </div>
+                    
+                    <div class="ticket-detail">
+                        <span class="ticket-detail-label">Ticket Holder</span>
+                        <div class="ticket-detail-value">
+                            {{ ticket.user.get_full_name|default:ticket.user.username }}
+                        </div>
+                    </div>
+                    
+                    <div class="ticket-detail">
+                        <span class="ticket-detail-label">Ticket Code</span>
+                        <div class="ticket-detail-value">
+                            {{ ticket.ticket_code }}
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="ticket-qr">
+                    <img src="{{ qr_code }}" alt="Ticket QR Code">
+                    <div style="margin-top: 10px; font-size: 12px; color: #333;">
+                        Scan this QR code at the event entrance
+                    </div>
+                </div>
+            </div>
+            
+            <div class="ticket-footer">
+                <div>
+                    Ticket purchased on {{ ticket.purchase_date|date:"F j, Y, g:i A" }}
+                </div>
+            </div>
+        </div>
+        
+        <div class="terms">
+            <h3>Terms & Conditions</h3>
+            <ol>
+                <li>This ticket is valid only for the event, date, and time specified.</li>
+                <li>This ticket is non-refundable unless the event is cancelled.</li>
+                <li>The ticket holder must comply with all venue rules and regulations.</li>
+                <li>The organizer reserves the right to refuse entry or remove attendees who violate event policies.</li>
+                <li>Photography and recording may be taking place at the event. By attending, you consent to being filmed or photographed.</li>
+                <li>This ticket is issued subject to the event organizer's terms and conditions.</li>
+            </ol>
+            
+            <p>Generated on {{ generated_at|date:"F j, Y, g:i A" }} • EventHub</p>
+        </div>
+    </div>
+</body>
+</html>

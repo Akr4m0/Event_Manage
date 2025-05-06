@@ -1,0 +1,426 @@
+{% extends 'base.html' %}
+
+{% block title %}Scan Tickets - EventHub{% endblock %}
+
+{% block extra_css %}
+<style>
+    .scanner-container {
+        position: relative;
+        width: 100%;
+        max-width: 500px;
+        margin: 0 auto;
+    }
+    
+    #scanner-preview {
+        width: 100%;
+        border-radius: 10px;
+        border: 3px solid var(--dark-blue);
+    }
+    
+    .scanner-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        pointer-events: none;
+    }
+    
+    .scanner-target {
+        width: 200px;
+        height: 200px;
+        border: 2px solid var(--highlight-color);
+        border-radius: 20px;
+        position: relative;
+    }
+    
+    .scanner-target::before,
+    .scanner-target::after {
+        content: '';
+        position: absolute;
+        width: 20px;
+        height: 20px;
+        border-color: var(--highlight-color);
+        border-style: solid;
+    }
+    
+    .scanner-target::before {
+        top: -2px;
+        left: -2px;
+        border-width: 4px 0 0 4px;
+        border-radius: 10px 0 0 0;
+    }
+    
+    .scanner-target::after {
+        bottom: -2px;
+        right: -2px;
+        border-width: 0 4px 4px 0;
+        border-radius: 0 0 10px 0;
+    }
+    
+    .scan-result {
+        padding: 20px;
+        border-radius: 10px;
+        margin-top: 20px;
+        display: none;
+    }
+    
+    .scan-result.success {
+        background-color: rgba(46, 204, 113, 0.2);
+        border: 1px solid rgba(46, 204, 113, 0.4);
+    }
+    
+    .scan-result.error {
+        background-color: rgba(231, 76, 60, 0.2);
+        border: 1px solid rgba(231, 76, 60, 0.4);
+    }
+    
+    .scan-history {
+        max-height: 300px;
+        overflow-y: auto;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'home' %}" class="text-decoration-none">Home</a></li>
+                <li class="breadcrumb-item active" aria-current="page">Scan Tickets</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-12">
+        <h1><i class="fas fa-qrcode text-highlight me-2"></i>Scan Tickets</h1>
+        <p class="text-muted">Use your device camera to scan and validate ticket QR codes</p>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-6">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h3 class="mb-0"><i class="fas fa-camera text-highlight me-2"></i>Scanner</h3>
+            </div>
+            <div class="card-body">
+                <div class="scanner-container mb-4">
+                    <video id="scanner-preview" autoplay="true"></video>
+                    <div class="scanner-overlay">
+                        <div class="scanner-target"></div>
+                    </div>
+                </div>
+                
+                <div class="d-grid gap-2 mb-3">
+                    <button id="start-scanner" class="btn btn-primary">
+                        <i class="fas fa-play me-2"></i>Start Scanner
+                    </button>
+                    <button id="pause-scanner" class="btn btn-outline-light" disabled>
+                        <i class="fas fa-pause me-2"></i>Pause Scanner
+                    </button>
+                </div>
+                
+                <div class="mb-3">
+                    <label for="manual-code" class="form-label">Enter Code Manually</label>
+                    <div class="input-group">
+                        <input type="text" class="form-control" id="manual-code" placeholder="Enter ticket code">
+                        <button class="btn btn-outline-light" type="button" id="submit-manual-code">
+                            <i class="fas fa-check"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <div id="scan-result" class="scan-result">
+                    <div id="scan-result-content"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-6">
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h3 class="mb-0"><i class="fas fa-history text-highlight me-2"></i>Scan History</h3>
+                <button id="clear-history" class="btn btn-sm btn-outline-light">
+                    <i class="fas fa-trash-alt me-1"></i>Clear
+                </button>
+            </div>
+            <div class="card-body p-0">
+                <div class="scan-history" id="scan-history">
+                    {% if recent_scans %}
+                        {% for ticket in recent_scans %}
+                            <div class="p-3 border-bottom border-secondary">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <div class="d-flex align-items-center">
+                                            <span class="badge bg-success me-2">
+                                                <i class="fas fa-check"></i>
+                                            </span>
+                                            <div>
+                                                <div><strong>{{ ticket.ticket_type.event.title }}</strong></div>
+                                                <div class="small text-muted">{{ ticket.ticket_type.name }} • {{ ticket.user.username }}</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="text-end">
+                                        <small class="text-muted">{{ ticket.checked_in_time|date:"g:i A" }}</small>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="text-center py-5 text-muted">
+                            <i class="fas fa-history fa-3x mb-3"></i>
+                            <p>No scan history yet</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://unpkg.com/html5-qrcode"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        let scanner = null;
+        const startBtn = document.getElementById('start-scanner');
+        const pauseBtn = document.getElementById('pause-scanner');
+        const scanResult = document.getElementById('scan-result');
+        const scanResultContent = document.getElementById('scan-result-content');
+        const manualCodeInput = document.getElementById('manual-code');
+        const submitManualBtn = document.getElementById('submit-manual-code');
+        const scanHistory = document.getElementById('scan-history');
+        const clearHistoryBtn = document.getElementById('clear-history');
+        
+        // Initialize QR scanner
+        function initScanner() {
+            scanner = new Html5Qrcode("scanner-preview");
+            
+            const qrConfig = {
+                fps: 10,
+                qrbox: 250
+            };
+            
+            // Start scanning
+            scanner.start(
+                { facingMode: "environment" },
+                qrConfig,
+                onScanSuccess,
+                onScanFailure
+            ).catch(err => {
+                console.error("Failed to start scanner", err);
+                showError("Failed to start camera. Please make sure you have given camera permissions.");
+            });
+            
+            // Update button states
+            startBtn.disabled = true;
+            pauseBtn.disabled = false;
+        }
+        
+        // Stop scanning
+        function stopScanner() {
+            if (scanner && scanner.isScanning) {
+                scanner.stop().then(() => {
+                    console.log("Scanner stopped");
+                    startBtn.disabled = false;
+                    pauseBtn.disabled = true;
+                }).catch(err => {
+                    console.error("Failed to stop scanner", err);
+                });
+            }
+        }
+        
+        // Handle successful scan
+        function onScanSuccess(decodedText) {
+            console.log("QR Code detected:", decodedText);
+            processTicketCode(decodedText);
+        }
+        
+        // Handle scan failure
+        function onScanFailure(error) {
+            // console.error("QR scan error:", error);
+            // Don't show errors for normal operation
+        }
+        
+        // Process the ticket code (from QR or manual input)
+        function processTicketCode(code) {
+            // Temporarily stop scanning to prevent multiple scans
+            if (scanner && scanner.isScanning) {
+                scanner.pause();
+            }
+            
+            // Send API request to validate the ticket
+            fetch('{% url "scan_ticket" %}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: `ticket_code=${code}`
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    showSuccess(data.message, data.ticket);
+                } else {
+                    showError(data.message);
+                }
+                
+                // Add to history
+                addToHistory(code, data);
+                
+                // Resume scanning after a delay
+                setTimeout(() => {
+                    if (scanner && scanner.isPaused) {
+                        scanner.resume();
+                    }
+                }, 3000);
+            })
+            .catch(error => {
+                console.error("API Error:", error);
+                showError("Failed to validate ticket. Please try again.");
+                
+                // Resume scanning
+                if (scanner && scanner.isPaused) {
+                    scanner.resume();
+                }
+            });
+        }
+        
+        // Show success message
+        function showSuccess(message, ticket) {
+            scanResult.className = 'scan-result success';
+            scanResult.style.display = 'block';
+            
+            scanResultContent.innerHTML = `
+                <div class="d-flex align-items-center mb-3">
+                    <div class="rounded-circle bg-success d-flex align-items-center justify-content-center me-3" style="width: 40px; height: 40px;">
+                        <i class="fas fa-check text-white"></i>
+                    </div>
+                    <h5 class="mb-0">${message}</h5>
+                </div>
+                
+                <div class="card bg-dark">
+                    <div class="card-body">
+                        <p class="mb-1"><strong>Event:</strong> ${ticket.event}</p>
+                        <p class="mb-1"><strong>Ticket Type:</strong> ${ticket.type}</p>
+                        <p class="mb-1"><strong>Attendee:</strong> ${ticket.user}</p>
+                        <p class="mb-0"><strong>Check-in Time:</strong> ${ticket.checked_in_time}</p>
+                    </div>
+                </div>
+            `;
+        }
+        
+        // Show error message
+        function showError(message) {
+            scanResult.className = 'scan-result error';
+            scanResult.style.display = 'block';
+            
+            scanResultContent.innerHTML = `
+                <div class="d-flex align-items-center">
+                    <div class="rounded-circle bg-danger d-flex align-items-center justify-content-center me-3" style="width: 40px; height: 40px;">
+                        <i class="fas fa-times text-white"></i>
+                    </div>
+                    <h5 class="mb-0">${message}</h5>
+                </div>
+            `;
+        }
+        
+        // Add scan to history
+        function addToHistory(code, data) {
+            // Remove empty state if present
+            if (scanHistory.querySelector('.text-center')) {
+                scanHistory.innerHTML = '';
+            }
+            
+            // Create history item
+            const historyItem = document.createElement('div');
+            historyItem.className = 'p-3 border-bottom border-secondary';
+            
+            if (data.status === 'success') {
+                historyItem.innerHTML = `
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <div class="d-flex align-items-center">
+                                <span class="badge bg-success me-2">
+                                    <i class="fas fa-check"></i>
+                                </span>
+                                <div>
+                                    <div><strong>${data.ticket.event}</strong></div>
+                                    <div class="small text-muted">${data.ticket.type} • ${data.ticket.user}</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="text-end">
+                            <small class="text-muted">${new Date().toLocaleTimeString()}</small>
+                        </div>
+                    </div>
+                `;
+            } else {
+                historyItem.innerHTML = `
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <div class="d-flex align-items-center">
+                                <span class="badge bg-danger me-2">
+                                    <i class="fas fa-times"></i>
+                                </span>
+                                <div>
+                                    <div><strong>Error</strong></div>
+                                    <div class="small text-muted">${data.message}</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="text-end">
+                            <small class="text-muted">${new Date().toLocaleTimeString()}</small>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            // Add to history (at the top)
+            scanHistory.insertBefore(historyItem, scanHistory.firstChild);
+        }
+        
+        // Event listeners
+        startBtn.addEventListener('click', initScanner);
+        pauseBtn.addEventListener('click', stopScanner);
+        
+        submitManualBtn.addEventListener('click', function() {
+            const code = manualCodeInput.value.trim();
+            if (code) {
+                processTicketCode(code);
+                manualCodeInput.value = '';
+            }
+        });
+        
+        manualCodeInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                const code = manualCodeInput.value.trim();
+                if (code) {
+                    processTicketCode(code);
+                    manualCodeInput.value = '';
+                }
+            }
+        });
+        
+        clearHistoryBtn.addEventListener('click', function() {
+            scanHistory.innerHTML = `
+                <div class="text-center py-5 text-muted">
+                    <i class="fas fa-history fa-3x mb-3"></i>
+                    <p>No scan history yet</p>
+                </div>
+            `;
+        });
+    });
+</script>
+{% endblock %}

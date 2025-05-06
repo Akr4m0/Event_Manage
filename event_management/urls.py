@@ -1,4 +1,4 @@
-# event_management/urls.py
+# event_management/urls.py (part to be updated)
 from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
@@ -8,6 +8,7 @@ from rest_framework.documentation import include_docs_urls
 from django.contrib.auth import views as auth_views
 from events.site_views import home, event_list, event_detail, my_events, create_event, edit_event
 from users.auth_views import login_view, logout_view, profile_view, register_view
+from tickets import ticket_views, checkout_views
 
 urlpatterns = [
     # Admin
@@ -26,6 +27,21 @@ urlpatterns = [
     path('logout/', logout_view, name='logout'),
     path('register/', register_view, name='register'),
     path('profile/', profile_view, name='profile'),
+    
+    # Ticket views
+    path('my-tickets/', ticket_views.my_tickets, name='my_tickets'),
+    path('ticket/<uuid:ticket_id>/', ticket_views.ticket_detail, name='ticket_detail'),
+    path('ticket/<uuid:ticket_id>/download/', ticket_views.download_ticket, name='download_ticket'),
+    path('ticket/<uuid:ticket_id>/transfer/', ticket_views.transfer_ticket, name='transfer_ticket'),
+    path('ticket/check-in/<uuid:ticket_id>/', ticket_views.check_in_ticket, name='check_in_ticket'),
+    path('ticket/scan/', ticket_views.scan_ticket, name='scan_ticket'),
+    path('ticket/stats/<int:event_id>/', ticket_views.ticket_stats, name='ticket_stats'),
+    
+    # Checkout views
+    path('checkout/', checkout_views.checkout, name='checkout'),
+    path('payment/<int:payment_id>/confirmation/', checkout_views.payment_confirmation, name='payment_confirmation'),
+    path('payment/<int:payment_id>/success/', checkout_views.payment_success, name='payment_success'),
+    path('payment/<int:payment_id>/cancel/', checkout_views.payment_cancel, name='payment_cancel'),
     
     # Password reset
     path('password_reset/', auth_views.PasswordResetView.as_view(), name='password_reset'),

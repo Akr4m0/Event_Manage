@@ -1,0 +1,107 @@
+{% extends 'base.html' %}
+
+{% block title %}Transfer Ticket - EventHub{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'home' %}" class="text-decoration-none">Home</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'my_tickets' %}" class="text-decoration-none">My Tickets</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'ticket_detail' ticket_id=ticket.ticket_code %}" class="text-decoration-none">Ticket Details</a></li>
+                <li class="breadcrumb-item active" aria-current="page">Transfer Ticket</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-12">
+        <h1><i class="fas fa-exchange-alt text-highlight me-2"></i>Transfer Ticket</h1>
+        <p class="text-muted">Transfer your ticket to another user</p>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h3 class="mb-0"><i class="fas fa-ticket-alt text-highlight me-2"></i>Ticket Information</h3>
+            </div>
+            <div class="card-body">
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label">Event</label>
+                            <div>{{ ticket.ticket_type.event.title }}</div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label">Ticket Type</label>
+                            <div>{{ ticket.ticket_type.name }}</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label">Event Date</label>
+                            <div>{{ ticket.ticket_type.event.start_date|date:"l, F j, Y" }}</div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label">Event Time</label>
+                            <div>{{ ticket.ticket_type.event.start_date|date:"g:i A" }} - {{ ticket.ticket_type.event.end_date|date:"g:i A" }}</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle me-2"></i>
+                    You are about to transfer this ticket to another user. Once transferred, you will no longer have access to this ticket.
+                </div>
+                
+                <form method="post" action="{% url 'transfer_ticket' ticket_id=ticket.ticket_code %}">
+                    {% csrf_token %}
+                    
+                    <div class="mb-4">
+                        <label for="recipient_username" class="form-label">Recipient Username</label>
+                        <input type="text" class="form-control" id="recipient_username" name="recipient_username" required placeholder="Enter the username of the recipient">
+                        <div class="form-text">Make sure to enter the exact username of the person you want to transfer this ticket to.</div>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'ticket_detail' ticket_id=ticket.ticket_code %}" class="btn btn-outline-light">
+                            <i class="fas fa-times me-2"></i>Cancel
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-exchange-alt me-2"></i>Transfer Ticket
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h3 class="mb-0"><i class="fas fa-info-circle text-highlight me-2"></i>Before You Transfer</h3>
+            </div>
+            <div class="card-body">
+                <ul class="mb-0">
+                    <li class="mb-2">Make sure you trust the person you're transferring your ticket to.</li>
+                    <li class="mb-2">Double-check the username to ensure it's correct.</li>
+                    <li class="mb-2">Once transferred, you cannot undo this action.</li>
+                    <li class="mb-2">The recipient will receive an email notification.</li>
+                    <li>If you're unsure, you can cancel this process and keep your ticket.</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
