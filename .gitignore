@@ -40,6 +40,3 @@ ENV/
 *.swp
 *.swo
 
-# OS specific
-.DS_Store
-Thumbs.db
