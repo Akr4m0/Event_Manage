@@ -94,6 +94,42 @@
     .numInputWrapper span.arrowDown:after {
         border-top-color: var(--text-color);
     }
+
+    .ticket-card {
+        border-left: 4px solid var(--accent-color);
+        transition: all 0.3s ease;
+    }
+    
+    .ticket-card:hover {
+        box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+        border-left: 4px solid var(--highlight-color);
+    }
+
+    .category-select {
+        max-height: 300px;
+        overflow-y: auto;
+    }
+
+    .file-preview {
+        max-height: 200px;
+        width: auto;
+        border-radius: 5px;
+        display: none;
+        margin-top: 10px;
+    }
+
+    .progress-container {
+        margin-top: 15px;
+    }
+
+    .text-error {
+        color: #e74c3c;
+    }
+
+    .required-field::after {
+        content: " *";
+        color: #e74c3c;
+    }
 </style>
 {% endblock %}
 
@@ -110,6 +146,20 @@
     </div>
 </div>
 
+<!-- Display error messages -->
+{% if messages %}
+<div class="row mb-4">
+    <div class="col-md-12">
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
 <div class="row mb-4">
     <div class="col-md-12">
         <h1><i class="fas fa-plus-circle text-highlight me-2"></i>Create New Event</h1>
@@ -124,7 +174,7 @@
                 <h3 class="mb-0"><i class="fas fa-info-circle text-highlight me-2"></i>Event Information</h3>
             </div>
             <div class="card-body">
-                <form method="post" action="{% url 'create_event' %}" enctype="multipart/form-data">
+                <form method="post" action="{% url 'create_event' %}" enctype="multipart/form-data" id="create-event-form">
                     {% csrf_token %}
                     
                     <!-- Basic Info Section -->
@@ -132,23 +182,32 @@
                         <h4 class="mb-3">Basic Information</h4>
                         
                         <div class="mb-3">
-                            <label for="title" class="form-label">Event Title <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control form-control-dark" id="title" name="title" required maxlength="200" placeholder="Give your event a clear, catchy title">
+                            <label for="title" class="form-label required-field">Event Title</label>
+                            <input type="text" class="form-control form-control-dark" id="title" name="title" required maxlength="200" placeholder="Give your event a clear, catchy title" {% if form.title.value %}value="{{ form.title.value }}"{% endif %}>
+                            {% if form.title.errors %}
+                                <div class="text-error small mt-1">{{ form.title.errors }}</div>
+                            {% endif %}
                         </div>
                         
                         <div class="mb-3">
-                            <label for="category" class="form-label">Category <span class="text-danger">*</span></label>
+                            <label for="category" class="form-label required-field">Category</label>
                             <select class="form-select form-control-dark" id="category" name="category" required>
-                                <option value="" selected disabled>Select a category</option>
+                                <option value="" disabled {% if not form.category.value %}selected{% endif %}>Select a category</option>
                                 {% for category in categories %}
-                                <option value="{{ category.id }}">{{ category.name }}</option>
+                                <option value="{{ category.id }}" {% if form.category.value == category.id %}selected{% endif %}>{{ category.name }}</option>
                                 {% endfor %}
                             </select>
+                            {% if form.category.errors %}
+                                <div class="text-error small mt-1">{{ form.category.errors }}</div>
+                            {% endif %}
                         </div>
                         
                         <div class="mb-3">
-                            <label for="description" class="form-label">Description <span class="text-danger">*</span></label>
-                            <textarea class="form-control form-control-dark" id="description" name="description" rows="5" required placeholder="Describe your event, include what attendees can expect"></textarea>
+                            <label for="description" class="form-label required-field">Description</label>
+                            <textarea class="form-control form-control-dark" id="description" name="description" rows="5" required placeholder="Describe your event, include what attendees can expect">{% if form.description.value %}{{ form.description.value }}{% endif %}</textarea>
+                            {% if form.description.errors %}
+                                <div class="text-error small mt-1">{{ form.description.errors }}</div>
+                            {% endif %}
                         </div>
                     </div>
                     
@@ -157,18 +216,27 @@
                         <h4 class="mb-3">Location & Date</h4>
                         
                         <div class="mb-3">
-                            <label for="location" class="form-label">Location <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control form-control-dark" id="location" name="location" required maxlength="255" placeholder="Venue name or address">
+                            <label for="location" class="form-label required-field">Location</label>
+                            <input type="text" class="form-control form-control-dark" id="location" name="location" required maxlength="255" placeholder="Venue name or address" {% if form.location.value %}value="{{ form.location.value }}"{% endif %}>
+                            {% if form.location.errors %}
+                                <div class="text-error small mt-1">{{ form.location.errors }}</div>
+                            {% endif %}
                         </div>
                         
                         <div class="row">
                             <div class="col-md-6 mb-3">
-                                <label for="start_date" class="form-label">Start Date & Time <span class="text-danger">*</span></label>
-                                <input type="text" class="form-control form-control-dark" id="start_date" name="start_date" required placeholder="Select date and time">
+                                <label for="start_date" class="form-label required-field">Start Date & Time</label>
+                                <input type="text" class="form-control form-control-dark" id="start_date" name="start_date" required placeholder="Select date and time" {% if form.start_date.value %}value="{{ form.start_date.value|date:'Y-m-d H:i' }}"{% endif %}>
+                                {% if form.start_date.errors %}
+                                    <div class="text-error small mt-1">{{ form.start_date.errors }}</div>
+                                {% endif %}
                             </div>
                             <div class="col-md-6 mb-3">
-                                <label for="end_date" class="form-label">End Date & Time <span class="text-danger">*</span></label>
-                                <input type="text" class="form-control form-control-dark" id="end_date" name="end_date" required placeholder="Select date and time">
+                                <label for="end_date" class="form-label required-field">End Date & Time</label>
+                                <input type="text" class="form-control form-control-dark" id="end_date" name="end_date" required placeholder="Select date and time" {% if form.end_date.value %}value="{{ form.end_date.value|date:'Y-m-d H:i' }}"{% endif %}>
+                                {% if form.end_date.errors %}
+                                    <div class="text-error small mt-1">{{ form.end_date.errors }}</div>
+                                {% endif %}
                             </div>
                         </div>
                     </div>
@@ -179,16 +247,22 @@
                         
                         <div class="mb-3">
                             <label for="max_attendees" class="form-label">Maximum Attendees</label>
-                            <input type="number" class="form-control form-control-dark" id="max_attendees" name="max_attendees" min="0" value="0" placeholder="0 for unlimited">
+                            <input type="number" class="form-control form-control-dark" id="max_attendees" name="max_attendees" min="0" value="{% if form.max_attendees.value %}{{ form.max_attendees.value }}{% else %}0{% endif %}" placeholder="0 for unlimited">
                             <div class="form-text text-muted">Set to 0 for unlimited capacity</div>
+                            {% if form.max_attendees.errors %}
+                                <div class="text-error small mt-1">{{ form.max_attendees.errors }}</div>
+                            {% endif %}
                         </div>
                         
                         <div class="mb-3">
-                            <label for="status" class="form-label">Event Status <span class="text-danger">*</span></label>
+                            <label for="status" class="form-label required-field">Event Status</label>
                             <select class="form-select form-control-dark" id="status" name="status" required>
-                                <option value="draft">Draft - Only visible to you</option>
-                                <option value="published">Published - Visible to everyone</option>
+                                <option value="draft" {% if form.status.value == 'draft' or not form.status.value %}selected{% endif %}>Draft - Only visible to you</option>
+                                <option value="published" {% if form.status.value == 'published' %}selected{% endif %}>Published - Visible to everyone</option>
                             </select>
+                            {% if form.status.errors %}
+                                <div class="text-error small mt-1">{{ form.status.errors }}</div>
+                            {% endif %}
                         </div>
                     </div>
                     
@@ -200,24 +274,28 @@
                             <label for="banner_image" class="form-label">Banner Image</label>
                             <input type="file" class="form-control form-control-dark" id="banner_image" name="banner_image" accept="image/*">
                             <div class="form-text text-muted">Recommended size: 1200 x 600 pixels. Max file size: 5MB</div>
+                            <img id="image-preview" class="file-preview" src="#" alt="Banner preview">
+                            {% if form.banner_image.errors %}
+                                <div class="text-error small mt-1">{{ form.banner_image.errors }}</div>
+                            {% endif %}
                         </div>
                     </div>
                     
                     <!-- Ticket Types Section -->
                     <div class="mb-4">
-                        <h4 class="mb-3">Ticket Types</h4>
-                        <p class="text-muted mb-3">You can add ticket types after creating the event</p>
+                        <h4 class="mb-3 required-field">Ticket Types</h4>
+                        <p class="text-muted mb-3">Add at least one ticket type for your event</p>
                         
                         <div id="ticket-types-container">
-                            <div class="card mb-3">
+                            <div class="card ticket-card mb-3">
                                 <div class="card-body">
                                     <div class="row mb-3">
                                         <div class="col-md-6">
-                                            <label for="ticket_name_1" class="form-label">Ticket Name <span class="text-danger">*</span></label>
+                                            <label for="ticket_name_1" class="form-label required-field">Ticket Name</label>
                                             <input type="text" class="form-control form-control-dark" id="ticket_name_1" name="ticket_name[]" placeholder="e.g. General Admission" required>
                                         </div>
                                         <div class="col-md-6">
-                                            <label for="ticket_price_1" class="form-label">Price <span class="text-danger">*</span></label>
+                                            <label for="ticket_price_1" class="form-label required-field">Price</label>
                                             <div class="input-group">
                                                 <span class="input-group-text">$</span>
                                                 <input type="number" class="form-control form-control-dark" id="ticket_price_1" name="ticket_price[]" min="0" step="0.01" placeholder="0.00" required>
@@ -226,8 +304,9 @@
                                     </div>
                                     <div class="row mb-3">
                                         <div class="col-md-6">
-                                            <label for="ticket_quantity_1" class="form-label">Quantity Available <span class="text-danger">*</span></label>
+                                            <label for="ticket_quantity_1" class="form-label required-field">Quantity Available</label>
                                             <input type="number" class="form-control form-control-dark" id="ticket_quantity_1" name="ticket_quantity[]" min="0" placeholder="0 for unlimited" required>
+                                            <div class="form-text text-muted">Set to 0 for unlimited tickets</div>
                                         </div>
                                         <div class="col-md-6">
                                             <label for="ticket_description_1" class="form-label">Description</label>
@@ -276,6 +355,14 @@
                     <li>Monitor registrations and ticket sales</li>
                     <li>Update event details if necessary</li>
                 </ul>
+
+                <div class="progress-container">
+                    <h5>Form Completion</h5>
+                    <div class="progress" style="height: 10px;">
+                        <div class="progress-bar bg-highlight" id="form-progress" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+                    </div>
+                    <p class="text-muted small mt-2 text-center" id="progress-text">0% Complete</p>
+                </div>
             </div>
         </div>
     </div>
@@ -291,14 +378,32 @@
             enableTime: true,
             dateFormat: "Y-m-d H:i",
             minDate: "today",
-            time_24hr: false
+            time_24hr: false,
+            onChange: function(selectedDates, dateStr, instance) {
+                // Update the minimum date for end_date picker to be the start date
+                endDatePicker.set('minDate', dateStr);
+                
+                // If end date is before start date, update it
+                const endDate = endDatePicker.selectedDates[0];
+                if (endDate && endDate < selectedDates[0]) {
+                    // Set end date to be 2 hours after start date
+                    const newEndDate = new Date(selectedDates[0]);
+                    newEndDate.setHours(newEndDate.getHours() + 2);
+                    endDatePicker.setDate(newEndDate);
+                }
+                
+                updateFormProgress();
+            }
         });
         
-        flatpickr("#end_date", {
+        const endDatePicker = flatpickr("#end_date", {
             enableTime: true,
             dateFormat: "Y-m-d H:i",
             minDate: "today",
-            time_24hr: false
+            time_24hr: false,
+            onChange: function() {
+                updateFormProgress();
+            }
         });
         
         // Add ticket type functionality
@@ -308,7 +413,7 @@
             ticketTypeCount++;
             
             const ticketTypeHTML = `
-                <div class="card mb-3">
+                <div class="card ticket-card mb-3">
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-center mb-3">
                             <h5 class="mb-0">Ticket Type ${ticketTypeCount}</h5>
@@ -318,11 +423,11 @@
                         </div>
                         <div class="row mb-3">
                             <div class="col-md-6">
-                                <label for="ticket_name_${ticketTypeCount}" class="form-label">Ticket Name <span class="text-danger">*</span></label>
+                                <label for="ticket_name_${ticketTypeCount}" class="form-label required-field">Ticket Name</label>
                                 <input type="text" class="form-control form-control-dark" id="ticket_name_${ticketTypeCount}" name="ticket_name[]" placeholder="e.g. VIP Pass" required>
                             </div>
                             <div class="col-md-6">
-                                <label for="ticket_price_${ticketTypeCount}" class="form-label">Price <span class="text-danger">*</span></label>
+                                <label for="ticket_price_${ticketTypeCount}" class="form-label required-field">Price</label>
                                 <div class="input-group">
                                     <span class="input-group-text">$</span>
                                     <input type="number" class="form-control form-control-dark" id="ticket_price_${ticketTypeCount}" name="ticket_price[]" min="0" step="0.01" placeholder="0.00" required>
@@ -331,8 +436,9 @@
                         </div>
                         <div class="row mb-3">
                             <div class="col-md-6">
-                                <label for="ticket_quantity_${ticketTypeCount}" class="form-label">Quantity Available <span class="text-danger">*</span></label>
+                                <label for="ticket_quantity_${ticketTypeCount}" class="form-label required-field">Quantity Available</label>
                                 <input type="number" class="form-control form-control-dark" id="ticket_quantity_${ticketTypeCount}" name="ticket_quantity[]" min="0" placeholder="0 for unlimited" required>
+                                <div class="form-text text-muted">Set to 0 for unlimited tickets</div>
                             </div>
                             <div class="col-md-6">
                                 <label for="ticket_description_${ticketTypeCount}" class="form-label">Description</label>
@@ -349,14 +455,97 @@
             
             while (tempDiv.firstChild) {
                 ticketContainer.appendChild(tempDiv.firstChild);
+                
+                // Add event listeners to the newly added ticket's input fields
+                const newTicket = ticketContainer.lastChild;
+                newTicket.querySelectorAll('input').forEach(input => {
+                    input.addEventListener('input', updateFormProgress);
+                });
             }
             
             // Add event listeners to remove buttons
             document.querySelectorAll('.remove-ticket-type').forEach(button => {
                 button.addEventListener('click', function() {
                     this.closest('.card').remove();
+                    updateFormProgress();
                 });
             });
+        });
+        
+        // Banner image preview
+        const bannerImageInput = document.getElementById('banner_image');
+        const imagePreview = document.getElementById('image-preview');
+        
+        bannerImageInput.addEventListener('change', function() {
+            if (this.files && this.files[0]) {
+                const reader = new FileReader();
+                
+                reader.onload = function(e) {
+                    imagePreview.src = e.target.result;
+                    imagePreview.style.display = 'block';
+                }
+                
+                reader.readAsDataURL(this.files[0]);
+            } else {
+                imagePreview.style.display = 'none';
+            }
+            
+            updateFormProgress();
+        });
+        
+        // Form validation and progress tracking
+        const form = document.getElementById('create-event-form');
+        const requiredFields = form.querySelectorAll('[required]');
+        const formProgressBar = document.getElementById('form-progress');
+        const progressText = document.getElementById('progress-text');
+        
+        // Add event listeners to all required fields
+        requiredFields.forEach(field => {
+            field.addEventListener('input', updateFormProgress);
+        });
+        
+        // Also update progress when selecting a category
+        document.getElementById('category').addEventListener('change', updateFormProgress);
+        
+        // Function to update form progress
+        function updateFormProgress() {
+            const totalFields = requiredFields.length;
+            let filledFields = 0;
+            
+            requiredFields.forEach(field => {
+                if (field.value.trim() !== '') {
+                    filledFields++;
+                }
+            });
+            
+            const progressPercentage = Math.round((filledFields / totalFields) * 100);
+            formProgressBar.style.width = `${progressPercentage}%`;
+            formProgressBar.setAttribute('aria-valuenow', progressPercentage);
+            progressText.textContent = `${progressPercentage}% Complete`;
+            
+            // Change color based on progress
+            if (progressPercentage < 33) {
+                formProgressBar.className = 'progress-bar bg-danger';
+            } else if (progressPercentage < 66) {
+                formProgressBar.className = 'progress-bar bg-warning';
+            } else if (progressPercentage < 100) {
+                formProgressBar.className = 'progress-bar bg-info';
+            } else {
+                formProgressBar.className = 'progress-bar bg-success';
+            }
+        }
+        
+        // Initial progress update
+        updateFormProgress();
+        
+        // Form submission validation
+        form.addEventListener('submit', function(event) {
+            const hasTickets = document.querySelector('[name="ticket_name[]"]').value.trim() !== '';
+            
+            if (!hasTickets) {
+                event.preventDefault();
+                alert('Please add at least one ticket type for your event.');
+            }
         });
     });
 </script>

@@ -234,13 +234,32 @@ def create_event(request):
             ticket_quantities = request.POST.getlist('ticket_quantity[]')
             ticket_descriptions = request.POST.getlist('ticket_description[]')
             
+            # Validate at least one ticket type
+            if not ticket_names or not any(name.strip() for name in ticket_names):
+                messages.error(request, "Please add at least one ticket type.")
+                event.delete()  # Delete the event if no ticket types
+                return render(request, 'events/create_event.html', {
+                    'form': form,
+                    'categories': EventCategory.objects.all(),
+                })
+            
             # Create ticket types
+            ticket_types_created = False
             for i in range(len(ticket_names)):
-                if ticket_names[i]:  # Only create if name provided
+                if ticket_names[i].strip():  # Only create if name provided
                     try:
                         price = float(ticket_prices[i])
                         quantity = int(ticket_quantities[i])
                         description = ticket_descriptions[i] if i < len(ticket_descriptions) else ''
+                        
+                        # Add validation for price and quantity
+                        if price < 0:
+                            messages.error(request, f"Price for '{ticket_names[i]}' must be non-negative.")
+                            continue
+                            
+                        if quantity < 0:
+                            messages.error(request, f"Quantity for '{ticket_names[i]}' must be non-negative.")
+                            continue
                         
                         TicketType.objects.create(
                             event=event,
@@ -249,9 +268,20 @@ def create_event(request):
                             quantity_available=quantity,
                             description=description
                         )
-                    except (ValueError, IndexError):
+                        ticket_types_created = True
+                    except (ValueError, IndexError) as e:
                         # Handle invalid input
+                        messages.error(request, f"Invalid data for '{ticket_names[i]}' ticket type: {str(e)}")
                         continue
+            
+            # If no valid ticket types were created, delete the event and redirect back
+            if not ticket_types_created:
+                event.delete()
+                messages.error(request, "No valid ticket types were created. Please fix the errors and try again.")
+                return render(request, 'events/create_event.html', {
+                    'form': form,
+                    'categories': EventCategory.objects.all(),
+                })
             
             messages.success(request, "Event created successfully!")
             
