@@ -1,0 +1,251 @@
+{% extends 'base.html' %}
+
+{% block title %}Complete Payment - EventHub{% endblock %}
+
+{% block extra_css %}
+<style>
+    .payment-form-container {
+        max-width: 600px;
+        margin: 0 auto;
+    }
+    
+    .stripe-element {
+        background-color: var(--dark-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 4px;
+        padding: 12px;
+        margin-bottom: 15px;
+        color: var(--text-color);
+    }
+    
+    .stripe-element--invalid {
+        border-color: #dc3545;
+    }
+    
+    .stripe-element--focus {
+        border-color: var(--accent-color);
+    }
+    
+    #card-errors {
+        color: #dc3545;
+        font-size: 14px;
+        margin-top: 5px;
+    }
+    
+    .payment-processing {
+        display: none;
+    }
+    
+    .payment-processing.show {
+        display: block;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'home' %}" class="text-decoration-none">Home</a></li>
+                <li class="breadcrumb-item active" aria-current="page">Complete Payment</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-12 text-center">
+        <h1><i class="fas fa-credit-card text-primary me-2"></i>Complete Your Payment</h1>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8 mx-auto">
+        <div class="payment-form-container">
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h5 class="card-title mb-4">Payment Details</h5>
+                    
+                    <form id="payment-form">
+                        {% csrf_token %}
+                        <input type="hidden" id="payment-id" value="{{ payment.id }}">
+                        
+                        <div class="mb-3">
+                            <label for="email" class="form-label">Email</label>
+                            <input type="email" class="form-control" id="email" value="{{ request.user.email }}" required>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="cardholder-name" class="form-label">Cardholder Name</label>
+                            <input type="text" class="form-control" id="cardholder-name" placeholder="John Doe" required>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="card-element" class="form-label">Card Information</label>
+                            <div id="card-element" class="stripe-element">
+                                <!-- Stripe Elements will be inserted here -->
+                            </div>
+                            <div id="card-errors" role="alert"></div>
+                        </div>
+                        
+                        <div class="alert alert-info mb-4">
+                            <i class="fas fa-lock me-2"></i>Your payment info is secure and encrypted
+                        </div>
+                        
+                        <button type="submit" id="submit-payment" class="btn btn-primary w-100">
+                            <span class="payment-text">
+                                <i class="fas fa-lock me-2"></i>Pay ${{ payment.amount }}
+                            </span>
+                            <span class="payment-processing">
+                                <i class="fas fa-spinner fa-spin me-2"></i>Processing...
+                            </span>
+                        </button>
+                    </form>
+                </div>
+            </div>
+            
+            <div class="card">
+                <div class="card-body">
+                    <h5>Order Summary</h5>
+                    <div class="mb-3">
+                        {% for ticket in payment.tickets.all %}
+                        <div class="d-flex justify-content-between mb-2">
+                            <div>
+                                <div>{{ ticket.ticket_type.name }}</div>
+                                <small class="text-muted">{{ ticket.ticket_type.event.title }}</small>
+                            </div>
+                            <div>${{ ticket.ticket_type.price }}</div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    <hr>
+                    <div class="d-flex justify-content-between">
+                        <h6>Total</h6>
+                        <h6>${{ payment.amount }}</h6>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://js.stripe.com/v3/"></script>
+<script>
+    // Initialize Stripe
+    const stripe = Stripe('{{ stripe_public_key }}');
+    const elements = stripe.elements();
+    
+    // Create card element
+    const cardElement = elements.create('card', {
+        style: {
+            base: {
+                color: '#e0e0e0',
+                fontFamily: '"Helvetica Neue", Helvetica, sans-serif',
+                fontSmoothing: 'antialiased',
+                fontSize: '16px',
+                '::placeholder': {
+                    color: '#a0a0a0'
+                }
+            },
+            invalid: {
+                color: '#fa755a',
+                iconColor: '#fa755a'
+            }
+        }
+    });
+    
+    // Mount card element
+    cardElement.mount('#card-element');
+    
+    // Handle real-time validation errors from the card Element
+    cardElement.addEventListener('change', function(event) {
+        const displayError = document.getElementById('card-errors');
+        if (event.error) {
+            displayError.textContent = event.error.message;
+        } else {
+            displayError.textContent = '';
+        }
+    });
+    
+    // Handle form submission
+    const form = document.getElementById('payment-form');
+    form.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        
+        const submitButton = document.getElementById('submit-payment');
+        const paymentText = submitButton.querySelector('.payment-text');
+        const processingText = submitButton.querySelector('.payment-processing');
+        
+        // Disable button and show processing state
+        submitButton.disabled = true;
+        paymentText.style.display = 'none';
+        processingText.classList.add('show');
+        
+        // Create payment method
+        const {error, paymentMethod} = await stripe.createPaymentMethod({
+            type: 'card',
+            card: cardElement,
+            billing_details: {
+                name: document.getElementById('cardholder-name').value,
+                email: document.getElementById('email').value,
+            },
+        });
+        
+        if (error) {
+            // Show error to customer
+            const errorElement = document.getElementById('card-errors');
+            errorElement.textContent = error.message;
+            
+            // Reset button state
+            submitButton.disabled = false;
+            paymentText.style.display = 'inline';
+            processingText.classList.remove('show');
+        } else {
+            // Send payment method to server
+            const paymentId = document.getElementById('payment-id').value;
+            
+            fetch('{% url "validate_stripe_payment" %}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                },
+                body: JSON.stringify({
+                    payment_method_id: paymentMethod.id,
+                    payment_id: paymentId,
+                }),
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    window.location.href = data.redirect_url;
+                } else {
+                    // Show error
+                    const errorElement = document.getElementById('card-errors');
+                    errorElement.textContent = data.error || 'An error occurred. Please try again.';
+                    
+                    // Reset button state
+                    submitButton.disabled = false;
+                    paymentText.style.display = 'inline';
+                    processingText.classList.remove('show');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                
+                // Show error
+                const errorElement = document.getElementById('card-errors');
+                errorElement.textContent = 'An error occurred. Please try again.';
+                
+                // Reset button state
+                submitButton.disabled = false;
+                paymentText.style.display = 'inline';
+                processingText.classList.remove('show');
+            });
+        }
+    });
+</script>
+{% endblock %}

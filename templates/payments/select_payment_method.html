@@ -1,0 +1,146 @@
+{% extends 'base.html' %}
+
+{% block title %}Select Payment Method - EventHub{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'home' %}" class="text-decoration-none">Home</a></li>
+                <li class="breadcrumb-item active" aria-current="page">Select Payment Method</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-12">
+        <h1><i class="fas fa-credit-card text-highlight me-2"></i>Select Payment Method</h1>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h3 class="mb-0"><i class="fas fa-wallet text-highlight me-2"></i>Payment Options</h3>
+            </div>
+            <div class="card-body">
+                <form method="post" action="{% url 'select_payment_method' payment_id=payment.id %}">
+                    {% csrf_token %}
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-4">
+                            <div class="card h-100">
+                                <div class="card-body text-center">
+                                    <i class="fas fa-credit-card fa-3x mb-3 text-primary"></i>
+                                    <h4>Credit/Debit Card</h4>
+                                    <p class="text-muted">Pay securely with your credit or debit card</p>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="payment_method" id="credit_card" value="credit_card" checked>
+                                        <label class="form-check-label" for="credit_card">
+                                            Select Credit Card
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6 mb-4">
+                            <div class="card h-100">
+                                <div class="card-body text-center">
+                                    <i class="fab fa-paypal fa-3x mb-3 text-info"></i>
+                                    <h4>PayPal</h4>
+                                    <p class="text-muted">Use your PayPal account for quick payment</p>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="payment_method" id="paypal" value="paypal">
+                                        <label class="form-check-label" for="paypal">
+                                            Select PayPal
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6 mb-4">
+                            <div class="card h-100">
+                                <div class="card-body text-center">
+                                    <i class="fas fa-university fa-3x mb-3 text-success"></i>
+                                    <h4>Bank Transfer</h4>
+                                    <p class="text-muted">Transfer directly from your bank account</p>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="payment_method" id="bank_transfer" value="offline">
+                                        <label class="form-check-label" for="bank_transfer">
+                                            Select Bank Transfer
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6 mb-4">
+                            <div class="card h-100">
+                                <div class="card-body text-center">
+                                    <i class="fas fa-money-bill-wave fa-3x mb-3 text-warning"></i>
+                                    <h4>Cash Payment</h4>
+                                    <p class="text-muted">Pay in cash at the event venue</p>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="payment_method" id="cash" value="offline">
+                                        <label class="form-check-label" for="cash">
+                                            Select Cash Payment
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="d-grid mt-4">
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="fas fa-arrow-right me-2"></i>Continue to Payment
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h3 class="mb-0"><i class="fas fa-shopping-cart text-highlight me-2"></i>Order Summary</h3>
+            </div>
+            <div class="card-body">
+                {% for item in tickets_summary %}
+                <div class="d-flex justify-content-between mb-3">
+                    <div>
+                        <h6 class="mb-0">{{ item.ticket_type.name }}</h6>
+                        <small class="text-muted">{{ item.ticket_type.event.title }}</small>
+                        <div class="text-muted small">Quantity: {{ item.quantity }}</div>
+                    </div>
+                    <div class="text-end">
+                        <div>${{ item.ticket_type.price }}</div>
+                        <div class="small text-muted">${{ item.subtotal }}</div>
+                    </div>
+                </div>
+                {% endfor %}
+                
+                <hr>
+                
+                <div class="d-flex justify-content-between mt-3">
+                    <h5>Total</h5>
+                    <h5>${{ total_amount }}</h5>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-body">
+                <h5><i class="fas fa-shield-alt text-highlight me-2"></i>Secure Payment</h5>
+                <p class="small text-muted mb-0">Your payment information is processed securely. We do not store credit card details and have no access to your credit card information.</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
