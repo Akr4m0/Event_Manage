@@ -1,0 +1,532 @@
+{% extends 'base.html' %}
+{% block title %}Edit Event - EventHub{% endblock %}
+{% block extra_css %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<style>
+    .form-control-dark {
+        background-color: var(--dark-bg);
+        border-color: var(--border-color);
+        color: var(--text-color);
+    }
+.flatpickr-calendar {
+    background: var(--darker-bg);
+    box-shadow: 0 3px 13px rgba(0, 0, 0, 0.3);
+    border: 1px solid var(--border-color);
+}
+
+.flatpickr-calendar.arrowTop:before {
+    border-bottom-color: var(--border-color);
+}
+
+.flatpickr-calendar.arrowTop:after {
+    border-bottom-color: var(--darker-bg);
+}
+
+.flatpickr-months {
+    background: var(--dark-blue);
+}
+
+.flatpickr-current-month .flatpickr-monthDropdown-months, 
+.flatpickr-current-month input.cur-year {
+    color: var(--text-color);
+}
+
+.flatpickr-current-month .flatpickr-monthDropdown-months:hover, 
+.flatpickr-current-month input.cur-year:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.flatpickr-day {
+    color: var(--text-color);
+}
+
+.flatpickr-day.prevMonthDay, .flatpickr-day.nextMonthDay {
+    color: var(--text-muted);
+}
+
+.flatpickr-day.selected, .flatpickr-day.startRange, .flatpickr-day.endRange {
+    background: var(--accent-color);
+    border-color: var(--accent-color);
+}
+
+.flatpickr-day.selected:hover, .flatpickr-day.startRange:hover, .flatpickr-day.endRange:hover {
+    background: var(--highlight-color);
+    border-color: var(--highlight-color);
+}
+
+.flatpickr-day:hover {
+    background: var(--dark-blue);
+    border-color: var(--dark-blue);
+}
+
+.flatpickr-day.flatpickr-disabled, .flatpickr-day.flatpickr-disabled:hover {
+    color: rgba(255, 255, 255, 0.2);
+}
+
+.flatpickr-time {
+    background: var(--darker-bg);
+    border-top: 1px solid var(--border-color);
+}
+
+.flatpickr-time input {
+    color: var(--text-color);
+}
+
+.flatpickr-time .flatpickr-am-pm {
+    color: var(--text-color);
+}
+
+.flatpickr-time .flatpickr-am-pm:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.flatpickr-time .numInputWrapper:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.numInputWrapper span.arrowUp:after {
+    border-bottom-color: var(--text-color);
+}
+
+.numInputWrapper span.arrowDown:after {
+    border-top-color: var(--text-color);
+}
+
+.ticket-card {
+    border-left: 4px solid var(--accent-color);
+    transition: all 0.3s ease;
+}
+
+.ticket-card:hover {
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+    border-left: 4px solid var(--highlight-color);
+}
+
+.category-select {
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.file-preview {
+    max-height: 200px;
+    width: auto;
+    border-radius: 5px;
+    display: none;
+    margin-top: 10px;
+}
+
+.progress-container {
+    margin-top: 15px;
+}
+
+.text-error {
+    color: #e74c3c;
+}
+
+.required-field::after {
+    content: " *";
+    color: #e74c3c;
+}
+</style>
+{% endblock %}
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'home' %}" class="text-decoration-none">Home</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'my_events' %}" class="text-decoration-none">My Events</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'event_detail' event_id=event.id %}" class="text-decoration-none">{{ event.title }}</a></li>
+                <li class="breadcrumb-item active" aria-current="page">Edit Event</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+<!-- Display error messages -->
+{% if messages %}
+<div class="row mb-4">
+    <div class="col-md-12">
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+<div class="row mb-4">
+    <div class="col-md-12">
+        <h1><i class="fas fa-edit text-highlight me-2"></i>Edit Event</h1>
+        <p class="text-muted">Update your event details below</p>
+    </div>
+</div>
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h3 class="mb-0"><i class="fas fa-info-circle text-highlight me-2"></i>Event Information</h3>
+            </div>
+            <div class="card-body">
+                <form method="post" action="{% url 'edit_event' event_id=event.id %}" enctype="multipart/form-data" id="edit-event-form">
+                    {% csrf_token %}
+                <!-- Basic Info Section -->
+                <div class="mb-4">
+                    <h4 class="mb-3">Basic Information</h4>
+                    
+                    <div class="mb-3">
+                        <label for="title" class="form-label required-field">Event Title</label>
+                        <input type="text" class="form-control form-control-dark" id="title" name="title" required maxlength="200" placeholder="Give your event a clear, catchy title" value="{{ form.title.value|default:event.title }}">
+                        {% if form.title.errors %}
+                            <div class="text-error small mt-1">{{ form.title.errors }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="category" class="form-label required-field">Category</label>
+                        <select class="form-select form-control-dark" id="category" name="category" required>
+                            <option value="" disabled>Select a category</option>
+                            {% for category in categories %}
+                            <option value="{{ category.id }}" {% if event.category_id == category.id %}selected{% endif %}>{{ category.name }}</option>
+                            {% endfor %}
+                        </select>
+                        {% if form.category.errors %}
+                            <div class="text-error small mt-1">{{ form.category.errors }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="description" class="form-label required-field">Description</label>
+                        <textarea class="form-control form-control-dark" id="description" name="description" rows="5" required placeholder="Describe your event, include what attendees can expect">{{ form.description.value|default:event.description }}</textarea>
+                        {% if form.description.errors %}
+                            <div class="text-error small mt-1">{{ form.description.errors }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <!-- Location & Date Section -->
+                <div class="mb-4">
+                    <h4 class="mb-3">Location & Date</h4>
+                    
+                    <div class="mb-3">
+                        <label for="location" class="form-label required-field">Location</label>
+                        <input type="text" class="form-control form-control-dark" id="location" name="location" required maxlength="255" placeholder="Venue name or address" value="{{ form.location.value|default:event.location }}">
+                        {% if form.location.errors %}
+                            <div class="text-error small mt-1">{{ form.location.errors }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="start_date" class="form-label required-field">Start Date & Time</label>
+                            <input type="text" class="form-control form-control-dark" id="start_date" name="start_date" required placeholder="Select date and time" value="{{ form.start_date.value|default:event.start_date|date:'Y-m-d H:i' }}">
+                            {% if form.start_date.errors %}
+                                <div class="text-error small mt-1">{{ form.start_date.errors }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="end_date" class="form-label required-field">End Date & Time</label>
+                            <input type="text" class="form-control form-control-dark" id="end_date" name="end_date" required placeholder="Select date and time" value="{{ form.end_date.value|default:event.end_date|date:'Y-m-d H:i' }}">
+                            {% if form.end_date.errors %}
+                                <div class="text-error small mt-1">{{ form.end_date.errors }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Capacity & Visibility -->
+                <div class="mb-4">
+                    <h4 class="mb-3">Capacity & Visibility</h4>
+                    
+                    <div class="mb-3">
+                        <label for="max_attendees" class="form-label">Maximum Attendees</label>
+                        <input type="number" class="form-control form-control-dark" id="max_attendees" name="max_attendees" min="0" value="{{ form.max_attendees.value|default:event.max_attendees }}" placeholder="0 for unlimited">
+                        <div class="form-text text-muted">Set to 0 for unlimited capacity</div>
+                        {% if form.max_attendees.errors %}
+                            <div class="text-error small mt-1">{{ form.max_attendees.errors }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="status" class="form-label required-field">Event Status</label>
+                        <select class="form-select form-control-dark" id="status" name="status" required>
+                            <option value="draft" {% if event.status == 'draft' %}selected{% endif %}>Draft - Only visible to you</option>
+                            <option value="published" {% if event.status == 'published' %}selected{% endif %}>Published - Visible to everyone</option>
+                            <option value="cancelled" {% if event.status == 'cancelled' %}selected{% endif %}>Cancelled - No longer accepting registrations</option>
+                            <option value="completed" {% if event.status == 'completed' %}selected{% endif %}>Completed - Event has ended</option>
+                        </select>
+                        {% if form.status.errors %}
+                            <div class="text-error small mt-1">{{ form.status.errors }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <!-- Image Upload -->
+                <div class="mb-4">
+                    <h4 class="mb-3">Event Image</h4>
+                    
+                    <div class="mb-3">
+                        <label for="banner_image" class="form-label">Banner Image</label>
+                        {% if event.banner_image %}
+                            <div class="mb-2">
+                                <img src="{{ event.banner_image.url }}" alt="Current banner" class="img-fluid rounded" style="max-height: 200px;">
+                                <div class="form-text">Current image</div>
+                            </div>
+                        {% endif %}
+                        <input type="file" class="form-control form-control-dark" id="banner_image" name="banner_image" accept="image/*">
+                        <div class="form-text text-muted">Recommended size: 1200 x 600 pixels. Max file size: 5MB. Leave empty to keep current image.</div>
+                        <img id="image-preview" class="file-preview" src="#" alt="Banner preview">
+                        {% if form.banner_image.errors %}
+                            <div class="text-error small mt-1">{{ form.banner_image.errors }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <!-- Existing Ticket Types Section -->
+                <div class="mb-4">
+                    <h4 class="mb-3">Ticket Types</h4>
+                    <p class="text-muted mb-3">Manage ticket types for your event</p>
+                    
+                    <div id="existing-ticket-types">
+                        {% for ticket_type in ticket_types %}
+                            <div class="card ticket-card mb-3">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between align-items-center mb-3">
+                                        <h5 class="mb-0">{{ ticket_type.name }}</h5>
+                                        {% if ticket_type.id in tickets_sold_ids %}
+                                            <div class="form-check form-switch">
+                                                <input class="form-check-input" type="checkbox" id="delete_ticket_{{ ticket_type.id }}" name="delete_ticket_{{ ticket_type.id }}" value="1">
+                                                <label class="form-check-label" for="delete_ticket_{{ ticket_type.id }}">Delete</label>
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                    <input type="hidden" name="ticket_id_{{ ticket_type.id }}" value="{{ ticket_type.id }}">
+                                    <div class="row mb-3">
+                                        <div class="col-md-6">
+                                            <label for="ticket_name_{{ ticket_type.id }}" class="form-label required-field">Ticket Name</label>
+                                            <input type="text" class="form-control form-control-dark" id="ticket_name_{{ ticket_type.id }}" name="ticket_name_{{ ticket_type.id }}" value="{{ ticket_type.name }}" required {% if ticket_type.id in tickets_sold_ids %}readonly{% endif %}>
+                                            {% if ticket_type.id in tickets_sold_ids %}
+                                                <div class="form-text text-warning">This ticket type has sales and cannot be renamed</div>
+                                            {% endif %}
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label for="ticket_price_{{ ticket_type.id }}" class="form-label required-field">Price</label>
+                                            <div class="input-group">
+                                                <span class="input-group-text">$</span>
+                                                <input type="number" class="form-control form-control-dark" id="ticket_price_{{ ticket_type.id }}" name="ticket_price_{{ ticket_type.id }}" value="{{ ticket_type.price }}" min="0" step="0.01" required {% if ticket_type.id in tickets_sold_ids %}readonly{% endif %}>
+                                            </div>
+                                            {% if ticket_type.id in tickets_sold_ids %}
+                                                <div class="form-text text-warning">This ticket type has sales and price cannot be changed</div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    <div class="row mb-3">
+                                        <div class="col-md-6">
+                                            <label for="ticket_quantity_{{ ticket_type.id }}" class="form-label required-field">Quantity Available</label>
+                                            <input type="number" class="form-control form-control-dark" id="ticket_quantity_{{ ticket_type.id }}" name="ticket_quantity_{{ ticket_type.id }}" value="{{ ticket_type.quantity_available }}" min="0" required>
+                                            <div class="form-text text-muted">Set to 0 for unlimited tickets</div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label for="ticket_description_{{ ticket_type.id }}" class="form-label">Description</label>
+                                            <input type="text" class="form-control form-control-dark" id="ticket_description_{{ ticket_type.id }}" name="ticket_description_{{ ticket_type.id }}" value="{{ ticket_type.description }}">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                    
+                    <!-- New Ticket Types Section -->
+                    <h5 class="mb-3">Add New Ticket Types</h5>
+                    <div id="new-ticket-types-container">
+                        <div class="card ticket-card mb-3">
+                            <div class="card-body">
+                                <div class="row mb-3">
+                                    <div class="col-md-6">
+                                        <label for="new_ticket_name_1" class="form-label">Ticket Name</label>
+                                        <input type="text" class="form-control form-control-dark" id="new_ticket_name_1" name="new_ticket_name[]" placeholder="e.g. VIP Pass">
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="new_ticket_price_1" class="form-label">Price</label>
+                                        <div class="input-group">
+                                            <span class="input-group-text">$</span>
+                                            <input type="number" class="form-control form-control-dark" id="new_ticket_price_1" name="new_ticket_price[]" min="0" step="0.01" placeholder="0.00">
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="row mb-3">
+                                    <div class="col-md-6">
+                                        <label for="new_ticket_quantity_1" class="form-label">Quantity Available</label>
+                                        <input type="number" class="form-control form-control-dark" id="new_ticket_quantity_1" name="new_ticket_quantity[]" min="0" value="0" placeholder="0 for unlimited">
+                                        <div class="form-text text-muted">Set to 0 for unlimited tickets</div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="new_ticket_description_1" class="form-label">Description</label>
+                                        <input type="text" class="form-control form-control-dark" id="new_ticket_description_1" name="new_ticket_description[]" placeholder="Optional description">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <button type="button" id="add-ticket-type" class="btn btn-outline-light">
+                        <i class="fas fa-plus me-2"></i>Add Another Ticket Type
+                    </button>
+                </div>
+                
+                <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
+                    <a href="{% url 'event_detail' event_id=event.id %}" class="btn btn-outline-light">Cancel</a>
+                    <button type="submit" class="btn btn-success">
+                        <i class="fas fa-check me-2"></i>Save Changes
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="col-lg-4">
+    <div class="card mb-4 sticky-top" style="top: 20px; z-index: 1;">
+        <div class="card-header">
+            <h3 class="mb-0"><i class="fas fa-lightbulb text-highlight me-2"></i>Tips</h3>
+        </div>
+        <div class="card-body">
+            <h5>Event Management Tips</h5>
+            <ul class="mb-4">
+                <li>Regularly update your event details</li>
+                <li>Monitor ticket sales and adjust as needed</li>
+                <li>Consider adding more ticket types for different audiences</li>
+                <li>Use a high-quality banner image</li>
+                <li>Provide clear location instructions</li>
+            </ul>
+            
+            <h5>After Editing Your Event</h5>
+            <ul>
+                <li>Share updated details on social media</li>
+                <li>Notify registered attendees of any changes</li>
+                <li>Review new ticket sales</li>
+            </ul>
+
+            {% if tickets_sold_count > 0 %}
+            <div class="alert alert-info mt-3">
+                <h5 class="alert-heading"><i class="fas fa-info-circle me-2"></i>Ticket Sales</h5>
+                <p>This event has {{ tickets_sold_count }} tickets sold. Some changes may be limited.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize datetime pickers
+        flatpickr("#start_date", {
+            enableTime: true,
+            dateFormat: "Y-m-d H:i",
+            minDate: "today",
+            time_24hr: false,
+            onChange: function(selectedDates, dateStr, instance) {
+                // Update the minimum date for end_date picker to be the start date
+                endDatePicker.set('minDate', dateStr);
+                
+                // If end date is before start date, update it
+                const endDate = endDatePicker.selectedDates[0];
+                if (endDate && endDate < selectedDates[0]) {
+                    // Set end date to be 2 hours after start date
+                    const newEndDate = new Date(selectedDates[0]);
+                    newEndDate.setHours(newEndDate.getHours() + 2);
+                    endDatePicker.setDate(newEndDate);
+                }
+            }
+        });
+        
+        const endDatePicker = flatpickr("#end_date", {
+            enableTime: true,
+            dateFormat: "Y-m-d H:i",
+            minDate: "today",
+            time_24hr: false
+        });
+        
+        // Add ticket type functionality
+        let newTicketTypeCount = 1;
+        
+        document.getElementById('add-ticket-type').addEventListener('click', function() {
+            newTicketTypeCount++;
+            
+            const ticketTypeHTML = `
+                <div class="card ticket-card mb-3">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h5 class="mb-0">New Ticket Type ${newTicketTypeCount}</h5>
+                            <button type="button" class="btn btn-sm btn-outline-danger remove-ticket-type">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="new_ticket_name_${newTicketTypeCount}" class="form-label">Ticket Name</label>
+                                <input type="text" class="form-control form-control-dark" id="new_ticket_name_${newTicketTypeCount}" name="new_ticket_name[]" placeholder="e.g. VIP Pass">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="new_ticket_price_${newTicketTypeCount}" class="form-label">Price</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">$</span>
+                                    <input type="number" class="form-control form-control-dark" id="new_ticket_price_${newTicketTypeCount}" name="new_ticket_price[]" min="0" step="0.01" placeholder="0.00">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="new_ticket_quantity_${newTicketTypeCount}" class="form-label">Quantity Available</label>
+                                <input type="number" class="form-control form-control-dark" id="new_ticket_quantity_${newTicketTypeCount}" name="new_ticket_quantity[]" min="0" value="0" placeholder="0 for unlimited">
+                                <div class="form-text text-muted">Set to 0 for unlimited tickets</div>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="new_ticket_description_${newTicketTypeCount}" class="form-label">Description</label>
+                                <input type="text" class="form-control form-control-dark" id="new_ticket_description_${newTicketTypeCount}" name="new_ticket_description[]" placeholder="Optional description">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            const ticketContainer = document.getElementById('new-ticket-types-container');
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = ticketTypeHTML;
+            
+            while (tempDiv.firstChild) {
+                ticketContainer.appendChild(tempDiv.firstChild);
+            }
+            
+            // Add event listeners to remove buttons
+            document.querySelectorAll('.remove-ticket-type').forEach(button => {
+                button.addEventListener('click', function() {
+                    this.closest('.card').remove();
+                });
+            });
+        });
+        
+        // Banner image preview
+        const bannerImageInput = document.getElementById('banner_image');
+        const imagePreview = document.getElementById('image-preview');
+        
+        bannerImageInput.addEventListener('change', function() {
+            if (this.files && this.files[0]) {
+                const reader = new FileReader();
+                
+                reader.onload = function(e) {
+                    imagePreview.src = e.target.result;
+                    imagePreview.style.display = 'block';
+                }
+                
+                reader.readAsDataURL(this.files[0]);
+            } else {
+                imagePreview.style.display = 'none';
+            }
+        });
+    });
+</script>
+{% endblock %}

@@ -386,17 +386,23 @@ def edit_event(request, event_id):
     categories = EventCategory.objects.all()
     ticket_types = TicketType.objects.filter(event=event)
     
-    # Check if tickets sold for each ticket type
-    tickets_sold = {}
+    # Check if tickets sold for each ticket type - collect IDs for direct comparison
+    tickets_sold_ids = []
+    tickets_sold_count = 0
+    
     for ticket_type in ticket_types:
-        tickets_sold[ticket_type.id] = Ticket.objects.filter(ticket_type=ticket_type).exists()
+        sales_count = Ticket.objects.filter(ticket_type=ticket_type).count()
+        if sales_count > 0:
+            tickets_sold_ids.append(ticket_type.id)
+            tickets_sold_count += sales_count
     
     return render(request, 'events/edit_event.html', {
         'form': form,
         'event': event,
         'categories': categories,
         'ticket_types': ticket_types,
-        'tickets_sold': tickets_sold,
+        'tickets_sold_ids': tickets_sold_ids,
+        'tickets_sold_count': tickets_sold_count,
     })
 
 @login_required
