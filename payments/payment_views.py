@@ -150,6 +150,8 @@ def process_offline_payment(request, payment_id):
         }
     })
 
+# Update this function in payments/payment_views.py
+
 @login_required
 def process_online_payment(request, payment_id):
     """Process online payment (Stripe/PayPal integration)"""
@@ -159,14 +161,26 @@ def process_online_payment(request, payment_id):
         messages.error(request, "This payment has already been processed.")
         return redirect('payment_status', payment_id=payment.id)
     
-    # Here you would integrate with Stripe or PayPal
-    # For this example, we'll simulate the payment process
+    # Create Stripe checkout session
+    from .stripe_utils import create_checkout_session
     
-    return render(request, 'payments/online_payment_form.html', {
-        'payment': payment,
-        'stripe_public_key': settings.STRIPE_PUBLISHABLE_KEY if hasattr(settings, 'STRIPE_PUBLISHABLE_KEY') else ''
-    })
-
+    success_url = request.build_absolute_uri(
+        reverse('payment_success', args=[payment.id])
+    )
+    cancel_url = request.build_absolute_uri(
+        reverse('payment_cancel', args=[payment.id])
+    )
+    
+    checkout_url = create_checkout_session(payment, success_url, cancel_url)
+    
+    if checkout_url:
+        # Redirect to Stripe Checkout
+        return redirect(checkout_url)
+    else:
+        # If Stripe session creation failed
+        messages.error(request, "Failed to initialize payment. Please try again.")
+        return redirect('select_payment_method', payment_id=payment.id)
+    
 @login_required
 def payment_success(request, payment_id):
     """Handle successful payment"""

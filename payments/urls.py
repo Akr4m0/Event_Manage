@@ -1,8 +1,9 @@
-# payments/urls.py - Updated version
+# payments/urls.py
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from .views import PaymentViewSet
 from . import payment_views
+from .webhooks import stripe_webhook  # Import the webhook handler
 
 router = DefaultRouter()
 router.register(r'payments', PaymentViewSet)
@@ -26,4 +27,7 @@ urlpatterns = [
     
     # AJAX endpoints
     path('validate-stripe/', payment_views.validate_stripe_payment, name='validate_stripe_payment'),
+    
+    # Stripe webhook
+    path('webhook/stripe/', stripe_webhook, name='stripe_webhook'),
 ]

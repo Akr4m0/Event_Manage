@@ -1,4 +1,4 @@
-# tickets/checkout_views.py
+# tickets/checkout_views.py - Updated with real Stripe integration
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
@@ -10,16 +10,8 @@ from django.db import transaction
 from events.models import Event
 from .models import TicketType, Ticket
 from payments.models import Payment
+from payments.stripe_utils import create_checkout_session
 import uuid
-
-# Import the create_checkout_session function if it exists
-try:
-    from payments.stripe_utils import create_checkout_session
-except ImportError:
-    # Mock implementation if the real one doesn't exist yet
-    def create_checkout_session(payment, success_url, cancel_url):
-        # Just redirect to success URL since we can't process a real payment
-        return success_url
 
 @login_required
 def checkout(request):
@@ -93,7 +85,7 @@ def checkout(request):
             return redirect('payment_confirmation', payment_id=payment.id)
         
         elif payment_method in ['credit_card', 'paypal']:
-            # For online payments, create a checkout session
+            # For online payments, create a Stripe checkout session
             success_url = request.build_absolute_uri(
                 reverse('payment_success', args=[payment.id])
             )
@@ -101,11 +93,18 @@ def checkout(request):
                 reverse('payment_cancel', args=[payment.id])
             )
             
-            # Create checkout session
+            # Create Stripe checkout session
             checkout_url = create_checkout_session(payment, success_url, cancel_url)
             
-            # Redirect to payment processor
-            return redirect(checkout_url)
+            if checkout_url:
+                # Redirect to Stripe Checkout
+                return redirect(checkout_url)
+            else:
+                # If Stripe session creation failed, show error
+                payment.payment_status = 'failed'
+                payment.save()
+                messages.error(request, "Failed to create checkout session. Please try again.")
+                return redirect('event_detail', event_id=event_id)
         
         else:
             messages.error(request, "Invalid payment method")
@@ -130,16 +129,26 @@ def payment_success(request, payment_id):
     """View for handling successful payments"""
     payment = get_object_or_404(Payment, id=payment_id, user=request.user)
     
-    # Update payment status if it's still pending
-    if payment.payment_status == 'pending':
-        payment.payment_status = 'completed'
-        payment.save()
+    # For Stripe payments, verify the session
+    if payment.stripe_session_id:
+        from payments.stripe_utils import retrieve_checkout_session
+        session = retrieve_checkout_session(payment.stripe_session_id)
         
-        # Update ticket status
-        payment.tickets.update(status='confirmed')
-        
-        # Send email notification
-        # (Implementation would go here)
+        if session and session.payment_status == 'paid':
+            # Update payment status if it's still pending
+            if payment.payment_status == 'pending':
+                payment.payment_status = 'completed'
+                payment.save()
+                
+                # Update ticket status
+                payment.tickets.update(status='confirmed')
+                
+                # Send email notification
+                # send_ticket_confirmation_email(payment)
+        else:
+            # Payment not actually completed
+            messages.warning(request, "Payment verification failed. Please contact support.")
+            return redirect('payment_status', payment_id=payment.id)
     
     return render(request, 'tickets/payment_success.html', {
         'payment': payment,
@@ -151,10 +160,7 @@ def payment_cancel(request, payment_id):
     """View for handling cancelled payments"""
     payment = get_object_or_404(Payment, id=payment_id, user=request.user)
     
-    # Optionally, you might want to cancel the payment and tickets here
-    # payment.payment_status = 'cancelled'
-    # payment.save()
-    # payment.tickets.update(status='cancelled')
+    # Don't automatically cancel the payment - user might want to try again
     
     return render(request, 'tickets/payment_cancel.html', {
         'payment': payment,
