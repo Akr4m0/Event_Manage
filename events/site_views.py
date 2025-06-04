@@ -676,3 +676,148 @@ def download_ticket(request, ticket_id):
     # For now, just redirect to event detail
     messages.info(request, "Ticket download functionality not implemented yet.")
     return redirect('event_detail', event_id=ticket.ticket_type.event.id)
+
+# Add this function to events/site_views.py
+@login_required
+def approve_event(request, event_id):
+    """View for approving events that require moderation"""
+    event = get_object_or_404(Event, id=event_id)
+    
+    # Check if user is staff or admin
+    if not request.user.is_staff:
+        messages.error(request, "You don't have permission to approve events.")
+        return redirect('event_detail', event_id=event.id)
+    
+    # Update event status to published
+    event.status = 'published'
+    event.save()
+    
+    messages.success(request, f"The event '{event.title}' has been approved and published.")
+    return redirect('event_detail', event_id=event.id)
+
+@login_required
+def admin_event_list(request):
+    """Admin view for listing and managing all events"""
+    # Check if user is staff or admin
+    if not request.user.is_staff:
+        messages.error(request, "You don't have permission to access the admin area.")
+        return redirect('home')
+    
+    # Get all events with filtering options
+    status_filter = request.GET.get('status', '')
+    category_filter = request.GET.get('category', '')
+    search_query = request.GET.get('q', '')
+    
+    events = Event.objects.all().order_by('-created_at')
+    
+    # Apply filters
+    if status_filter:
+        events = events.filter(status=status_filter)
+    
+    if category_filter:
+        events = events.filter(category_id=category_filter)
+        
+    if search_query:
+        events = events.filter(
+            Q(title__icontains=search_query) |
+            Q(description__icontains=search_query) |
+            Q(organizer__username__icontains=search_query)
+        )
+    
+    # Pagination
+    paginator = Paginator(events, 15)  # 15 events per page
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    # Get categories for filter dropdown
+    categories = EventCategory.objects.all()
+    
+    return render(request, 'events/admin_event_list.html', {
+        'page_obj': page_obj,
+        'status_filter': status_filter,
+        'category_filter': category_filter,
+        'search_query': search_query,
+        'categories': categories,
+        'statuses': [choice[0] for choice in Event.STATUS_CHOICES]
+    })
+
+@login_required
+def manage_categories(request):
+    """Admin view for managing event categories"""
+    # Check if user is staff or admin
+    if not request.user.is_staff:
+        messages.error(request, "You don't have permission to manage categories.")
+        return redirect('home')
+    
+    # Handle form submission for adding a new category
+    if request.method == 'POST':
+        action = request.POST.get('action', '')
+        
+        if action == 'add':
+            # Add new category
+            name = request.POST.get('name', '').strip()
+            description = request.POST.get('description', '').strip()
+            
+            if name:
+                # Check if category with this name already exists
+                if EventCategory.objects.filter(name__iexact=name).exists():
+                    messages.error(request, f"Category '{name}' already exists.")
+                else:
+                    EventCategory.objects.create(name=name, description=description)
+                    messages.success(request, f"Category '{name}' added successfully.")
+            else:
+                messages.error(request, "Category name is required.")
+        
+        elif action == 'edit':
+            # Edit existing category
+            category_id = request.POST.get('category_id')
+            name = request.POST.get('name', '').strip()
+            description = request.POST.get('description', '').strip()
+            
+            if name and category_id:
+                try:
+                    category = EventCategory.objects.get(id=category_id)
+                    
+                    # Check if name is changed and if new name already exists
+                    if name.lower() != category.name.lower() and EventCategory.objects.filter(name__iexact=name).exists():
+                        messages.error(request, f"Category '{name}' already exists.")
+                    else:
+                        category.name = name
+                        category.description = description
+                        category.save()
+                        messages.success(request, f"Category '{name}' updated successfully.")
+                except EventCategory.DoesNotExist:
+                    messages.error(request, "Category not found.")
+            else:
+                messages.error(request, "Category name and ID are required.")
+        
+        elif action == 'delete':
+            # Delete category
+            category_id = request.POST.get('category_id')
+            
+            if category_id:
+                try:
+                    category = EventCategory.objects.get(id=category_id)
+                    
+                    # Check if category is in use
+                    if Event.objects.filter(category=category).exists():
+                        messages.error(request, f"Cannot delete category '{category.name}' as it is being used by one or more events.")
+                    else:
+                        name = category.name
+                        category.delete()
+                        messages.success(request, f"Category '{name}' deleted successfully.")
+                except EventCategory.DoesNotExist:
+                    messages.error(request, "Category not found.")
+            else:
+                messages.error(request, "Category ID is required.")
+    
+    # Get all categories
+    categories = EventCategory.objects.all().order_by('name')
+    
+    # Get usage count for each category
+    for category in categories:
+        category.usage_count = Event.objects.filter(category=category).count()
+    
+    return render(request, 'events/manage_categories.html', {
+        'categories': categories
+    })

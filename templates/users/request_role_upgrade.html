@@ -1,0 +1,233 @@
+{% extends 'base.html' %}
+
+{% block title %}Request Role Upgrade - EventHub{% endblock %}
+
+{% block extra_css %}
+<style>
+    .role-info-card {
+        border-left: 4px solid var(--accent-color);
+    }
+    
+    .role-card {
+        cursor: pointer;
+        transition: all 0.3s ease;
+        height: 100%;
+    }
+    
+    .role-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+    }
+    
+    .role-card.selected {
+        border: 2px solid var(--highlight-color);
+    }
+    
+    .role-card .card-body {
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .role-card .role-icon {
+        font-size: 2.5rem;
+        margin-bottom: 1rem;
+        color: var(--highlight-color);
+    }
+    
+    .role-card .badge {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+    }
+    
+    .role-card .card-title {
+        margin-bottom: 0.5rem;
+    }
+    
+    .role-card .permission-list {
+        margin-top: auto;
+        padding-left: 1.5rem;
+        font-size: 0.9rem;
+    }
+    
+    .request-form {
+        margin-top: 1.5rem;
+        padding-top: 1.5rem;
+        border-top: 1px solid var(--border-color);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'home' %}" class="text-decoration-none">Home</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'profile' %}" class="text-decoration-none">My Profile</a></li>
+                <li class="breadcrumb-item active" aria-current="page">Request Role Upgrade</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-12">
+        <h1><i class="fas fa-user-tag text-highlight me-2"></i>Request Role Upgrade</h1>
+        <p class="text-muted">Upgrade your account to access additional features and permissions</p>
+    </div>
+</div>
+
+<!-- Current Role Info -->
+<div class="row mb-4">
+    <div class="col-lg-12">
+        <div class="card role-info-card">
+            <div class="card-body">
+                <h4 class="card-title"><i class="fas fa-info-circle text-highlight me-2"></i>Your Current Role</h4>
+                <div class="d-flex align-items-center">
+                    <h5 class="mb-0 me-3">{{ current_role }}</h5>
+                    {% if is_approved %}
+                        <span class="badge bg-success">Approved</span>
+                    {% else %}
+                        <span class="badge bg-warning">Pending Approval</span>
+                    {% endif %}
+                </div>
+                
+                {% if not is_approved %}
+                    <div class="alert alert-warning mt-3">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        Your current role is pending approval. You'll be able to use all features once an administrator approves your account.
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if available_roles %}
+    <!-- Available Upgrade Options -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <h3>Available Role Upgrades</h3>
+            <p class="text-muted">Select a role to request an upgrade</p>
+        </div>
+    </div>
+
+    <div class="row">
+        {% for role_value, role_name in available_roles %}
+            <div class="col-md-6 mb-4">
+                <div class="card role-card" data-role="{{ role_value }}">
+                    <div class="card-body">
+                        {% if role_value == 'host' %}
+                            <i class="fas fa-user-tie role-icon"></i>
+                            <h4 class="card-title">Event Host</h4>
+                            <p>Create and manage your own events, customize ticket types, and track attendees.</p>
+                            <ul class="permission-list">
+                                <li>Create and manage your own events</li>
+                                <li>Configure ticket types and pricing</li>
+                                <li>Access attendee information</li>
+                                <li>Check in attendees</li>
+                            </ul>
+                        {% elif role_value == 'event_manager' %}
+                            <i class="fas fa-user-cog role-icon"></i>
+                            <h4 class="card-title">Event Manager</h4>
+                            <p>Gain advanced event management capabilities, including managing categories and approving events.</p>
+                            <ul class="permission-list">
+                                <li>All Host permissions</li>
+                                <li>Manage event categories</li>
+                                <li>Approve other events</li>
+                                <li>Access analytics and reporting</li>
+                                <li>Approve offline payments</li>
+                            </ul>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+
+    <!-- Request Form -->
+    <form method="post" id="role-request-form">
+        {% csrf_token %}
+        <input type="hidden" name="requested_role" id="requested-role">
+        
+        <div class="request-form d-none">
+            <div class="row">
+                <div class="col-lg-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h4 class="mb-0">Request <span id="selected-role-name"></span> Role</h4>
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <label for="reason" class="form-label">Why are you requesting this role?</label>
+                                <textarea class="form-control" id="reason" name="reason" rows="4" required 
+                                          placeholder="Please explain why you would like this role and how you plan to use it"></textarea>
+                            </div>
+                            
+                            <div class="alert alert-info">
+                                <i class="fas fa-info-circle me-2"></i>
+                                Your request will be reviewed by an administrator. You'll be notified when it's approved.
+                            </div>
+                            
+                            <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                                <button type="button" class="btn btn-outline-light" id="cancel-selection">Cancel</button>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-paper-plane me-2"></i>Submit Request
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+{% else %}
+    <div class="alert alert-info">
+        <i class="fas fa-info-circle me-2"></i>
+        No role upgrades are available for your current role.
+    </div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const roleCards = document.querySelectorAll('.role-card');
+        const requestForm = document.querySelector('.request-form');
+        const requestedRoleInput = document.getElementById('requested-role');
+        const selectedRoleName = document.getElementById('selected-role-name');
+        const cancelSelectionBtn = document.getElementById('cancel-selection');
+        
+        roleCards.forEach(card => {
+            card.addEventListener('click', function() {
+                // Remove selected class from all cards
+                roleCards.forEach(c => c.classList.remove('selected'));
+                
+                // Add selected class to clicked card
+                this.classList.add('selected');
+                
+                // Get role value and name
+                const roleValue = this.getAttribute('data-role');
+                const roleName = this.querySelector('.card-title').textContent;
+                
+                // Update form
+                requestedRoleInput.value = roleValue;
+                selectedRoleName.textContent = roleName;
+                
+                // Show form
+                requestForm.classList.remove('d-none');
+                
+                // Scroll to form
+                requestForm.scrollIntoView({ behavior: 'smooth' });
+            });
+        });
+        
+        // Cancel selection
+        cancelSelectionBtn.addEventListener('click', function() {
+            roleCards.forEach(c => c.classList.remove('selected'));
+            requestForm.classList.add('d-none');
+        });
+    });
+</script>
+{% endblock %}

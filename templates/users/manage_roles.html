@@ -1,0 +1,1081 @@
+{% extends 'base.html' %}
+
+{% block title %}Manage User Roles - EventHub Admin{% endblock %}
+
+{% block extra_css %}
+<style>
+    .role-badge {
+        font-size: 0.8rem;
+        padding: 0.3rem 0.5rem;
+    }
+    
+    .approval-status {
+        width: 100px;
+    }
+    
+    .role-admin {
+        background-color: #e74c3c;
+    }
+    
+    .role-event_manager {
+        background-color: #3498db;
+    }
+    
+    .role-host {
+        background-color: #f39c12;
+    }
+    
+    .role-buyer {
+        background-color: #2ecc71;
+    }
+    
+    .user-table {
+        font-size: 0.95rem;
+    }
+    
+    .user-table td {
+        vertical-align: middle;
+    }
+    
+    .approval-count {
+        font-size: 0.9rem;
+        margin-left: 8px;
+        padding: 0.15rem 0.5rem;
+    }
+    
+    .user-stats {
+        background-color: var(--darker-bg);
+        border-radius: 0.5rem;
+    }
+    
+    .stats-item {
+        text-align: center;
+        padding: 1rem;
+        border-right: 1px solid var(--border-color);
+    }
+    
+    .stats-item:last-child {
+        border-right: none;
+    }
+    
+    .stats-number {
+        font-size: 2rem;
+        font-weight: 600;
+    }
+    
+    .stats-label {
+        font-size: 0.9rem;
+        color: var(--text-muted);
+    }
+    
+    .search-container {
+        max-width: 400px;
+    }
+    
+    .user-detail-row {
+        font-size: 0.9rem;
+    }
+    
+    .user-detail-row .label {
+        font-weight: 500;
+        color: var(--text-muted);
+    }
+    
+    .user-detail-row .value {
+        color: var(--text-color);
+    }
+    
+    .user-activity {
+        max-height: 200px;
+        overflow-y: auto;
+    }
+    
+    .activity-empty {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 2rem;
+        color: var(--text-muted);
+    }
+    
+    .activity-empty i {
+        font-size: 2rem;
+        margin-bottom: 1rem;
+    }
+    
+    .pending-approval {
+        background-color: rgba(243, 156, 18, 0.1);
+    }
+    
+    .filter-badge {
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+    
+    .filter-badge:hover {
+        opacity: 0.8;
+    }
+    
+    .pagination-container {
+        display: flex;
+        justify-content: center;
+        margin-top: 1.5rem;
+    }
+    
+    .role-description {
+        font-size: 0.85rem;
+        margin-top: 0.5rem;
+        color: var(--text-muted);
+    }
+    
+    .quick-filters {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 1rem;
+        flex-wrap: wrap;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'home' %}" class="text-decoration-none">Home</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'admin:index' %}" class="text-decoration-none">Admin</a></li>
+                <li class="breadcrumb-item active" aria-current="page">Manage User Roles</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<!-- Page Header -->
+<div class="row mb-4">
+    <div class="col-md-8">
+        <h1><i class="fas fa-users-cog text-highlight me-2"></i>Manage User Roles</h1>
+        <p class="text-muted">Assign roles and approve user permissions</p>
+    </div>
+    <div class="col-md-4 text-end">
+        <div class="btn-group">
+            <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#bulkApproveModal">
+                <i class="fas fa-check-circle me-2"></i>Bulk Approve
+            </button>
+            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createUserModal">
+                <i class="fas fa-user-plus me-2"></i>Create User
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- User Stats Row -->
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="user-stats d-flex flex-wrap">
+            <div class="stats-item flex-grow-1">
+                <div class="stats-number">{{ users|length }}</div>
+                <div class="stats-label">Total Users</div>
+            </div>
+            {% for role_value, role_name in role_choices %}
+            <div class="stats-item flex-grow-1">
+                <div class="stats-number" id="count-{{ role_value }}">
+                    <!-- Counts will be calculated by JavaScript -->
+                </div>
+                <div class="stats-label">{{ role_name }}</div>
+            </div>
+            {% endfor %}
+            <div class="stats-item flex-grow-1">
+                <div class="stats-number" id="pending-count">
+                    <!-- Will be calculated by JavaScript -->
+                </div>
+                <div class="stats-label">Pending Approval</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Filters -->
+<div class="row mb-2">
+    <div class="col-md-12">
+        <div class="quick-filters">
+            <span class="badge bg-warning filter-badge" data-filter="pending">
+                <i class="fas fa-clock me-1"></i>Pending Approval
+            </span>
+            <span class="badge bg-info filter-badge" data-filter="recent">
+                <i class="fas fa-user-clock me-1"></i>Recently Joined
+            </span>
+            <span class="badge bg-success filter-badge" data-filter="active">
+                <i class="fas fa-check-circle me-1"></i>Active Users
+            </span>
+            <span class="badge bg-secondary filter-badge" data-filter="inactive">
+                <i class="fas fa-user-clock me-1"></i>Inactive Users
+            </span>
+            <span class="badge bg-primary filter-badge" data-filter="social">
+                <i class="fas fa-globe me-1"></i>Social Login
+            </span>
+            <span class="badge bg-danger filter-badge" data-filter="reset">
+                <i class="fas fa-times me-1"></i>Clear Filters
+            </span>
+        </div>
+    </div>
+</div>
+
+<!-- Search and Filter Row -->
+<div class="row mb-4">
+    <div class="col-md-6">
+        <!-- Role Filter Tabs -->
+        <ul class="nav nav-pills">
+            <li class="nav-item">
+                <a class="nav-link active" href="#" data-role="all">
+                    All Users
+                </a>
+            </li>
+            {% for role_value, role_name in role_choices %}
+            <li class="nav-item">
+                <a class="nav-link" href="#" data-role="{{ role_value }}">
+                    {{ role_name }}
+                    {% if pending_approvals|get_item:role_value > 0 %}
+                    <span class="badge bg-warning approval-count">{{ pending_approvals|get_item:role_value }}</span>
+                    {% endif %}
+                </a>
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+    <div class="col-md-6">
+        <!-- Search Box -->
+        <div class="search-container ms-auto">
+            <div class="input-group">
+                <input type="text" class="form-control" id="user-search" placeholder="Search users...">
+                <button class="btn btn-outline-light" type="button" id="search-btn">
+                    <i class="fas fa-search"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- User Table -->
+<div class="card">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-dark table-hover user-table mb-0">
+                <thead>
+                    <tr>
+                        <th><input type="checkbox" id="select-all" class="form-check-input"></th>
+                        <th>Username</th>
+                        <th>Email</th>
+                        <th>Current Role</th>
+                        <th>Approved</th>
+                        <th>Date Joined</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for user in users %}
+                    <tr data-role="{% if user.role %}{{ user.role.role }}{% else %}buyer{% endif %}" 
+                        data-username="{{ user.username }}" 
+                        data-email="{{ user.email }}"
+                        data-approved="{% if user.role.is_approved %}true{% else %}false{% endif %}"
+                        data-joined="{{ user.date_joined|date:'Y-m-d' }}"
+                        data-last-login="{% if user.last_login %}{{ user.last_login|date:'Y-m-d' }}{% else %}never{% endif %}"
+                        data-has-social="{% if user.social_auth.exists %}true{% else %}false{% endif %}"
+                        class="{% if user.role and not user.role.is_approved and user.role.role != 'buyer' %}pending-approval{% endif %}">
+                        <td>
+                            <input type="checkbox" class="form-check-input user-checkbox" 
+                                   data-user-id="{{ user.id }}" 
+                                   data-role="{% if user.role %}{{ user.role.role }}{% else %}buyer{% endif %}"
+                                   data-approved="{% if user.role.is_approved %}true{% else %}false{% endif %}">
+                        </td>
+                        <td>
+                            {{ user.username }}
+                            {% if user.is_staff %}
+                            <span class="badge bg-danger ms-1">Staff</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ user.email }}</td>
+                        <td>
+                            {% if user.role %}
+                                <span class="badge role-badge role-{{ user.role.role }}">
+                                    {{ user.role.get_role_display }}
+                                </span>
+                            {% else %}
+                                <span class="badge role-badge role-buyer">Buyer</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-center">
+                            {% if user.role and user.role.is_approved %}
+                                <span class="badge bg-success approval-status">
+                                    <i class="fas fa-check-circle me-1"></i>Yes
+                                </span>
+                            {% else %}
+                                <span class="badge bg-warning approval-status">
+                                    <i class="fas fa-clock me-1"></i>Pending
+                                </span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {{ user.date_joined|date:"M d, Y" }}
+                            <div class="small text-muted">
+                                Last login: {% if user.last_login %}{{ user.last_login|date:"M d, Y" }}{% else %}Never{% endif %}
+                            </div>
+                        </td>
+                        <td>
+                            <div class="btn-group">
+                                <button type="button" class="btn btn-sm btn-outline-light" 
+                                        data-bs-toggle="modal" 
+                                        data-bs-target="#editRoleModal"
+                                        data-user-id="{{ user.id }}"
+                                        data-username="{{ user.username }}"
+                                        data-role="{% if user.role %}{{ user.role.role }}{% else %}buyer{% endif %}"
+                                        data-approved="{% if user.role.is_approved %}true{% else %}false{% endif %}">
+                                    <i class="fas fa-edit"></i> Edit
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-light user-details-btn" 
+                                        data-bs-toggle="modal" 
+                                        data-bs-target="#userDetailsModal"
+                                        data-user-id="{{ user.id }}"
+                                        data-username="{{ user.username }}"
+                                        data-email="{{ user.email }}"
+                                        data-date-joined="{{ user.date_joined|date:"M d, Y" }}"
+                                        data-first-name="{{ user.first_name }}"
+                                        data-last-name="{{ user.last_name }}"
+                                        data-role="{% if user.role %}{{ user.role.role }}{% else %}buyer{% endif %}"
+                                        data-role-display="{% if user.role %}{{ user.role.get_role_display }}{% else %}Buyer{% endif %}"
+                                        data-approved="{% if user.role.is_approved %}true{% else %}false{% endif %}">
+                                    <i class="fas fa-info-circle"></i> Details
+                                </button>
+                                {% if not user.is_staff and user.role.role != 'admin' %}
+                                <button type="button" class="btn btn-sm btn-outline-danger" 
+                                        data-bs-toggle="modal" 
+                                        data-bs-target="#deleteUserModal"
+                                        data-user-id="{{ user.id }}"
+                                        data-username="{{ user.username }}">
+                                    <i class="fas fa-trash"></i> Delete
+                                </button>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Pagination -->
+<div class="pagination-container mt-4">
+    <nav aria-label="User pagination">
+        <ul class="pagination">
+            <li class="page-item disabled">
+                <a class="page-link" href="#" tabindex="-1" aria-disabled="true">Previous</a>
+            </li>
+            <li class="page-item active"><a class="page-link" href="#">1</a></li>
+            <li class="page-item"><a class="page-link" href="#">2</a></li>
+            <li class="page-item"><a class="page-link" href="#">3</a></li>
+            <li class="page-item">
+                <a class="page-link" href="#">Next</a>
+            </li>
+        </ul>
+    </nav>
+</div>
+
+<!-- Create User Modal -->
+<div class="modal fade" id="createUserModal" tabindex="-1" aria-labelledby="createUserModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="createUserModalLabel">Create New User</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="post" action="{% url 'admin_create_user' %}">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="new-username" class="form-label">Username</label>
+                        <input type="text" class="form-control" id="new-username" name="username" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="new-email" class="form-label">Email</label>
+                        <input type="email" class="form-control" id="new-email" name="email" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="new-password" class="form-label">Password</label>
+                        <input type="password" class="form-control" id="new-password" name="password" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="new-role" class="form-label">Role</label>
+                        <select class="form-select" id="new-role" name="role">
+                            {% for role_value, role_name in role_choices %}
+                            <option value="{{ role_value }}">{{ role_name }}</option>
+                            {% endfor %}
+                        </select>
+                        <div class="role-description" id="new-role-description">
+                            Buyers can purchase tickets to events.
+                        </div>
+                    </div>
+                    
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" id="new-approved" name="is_approved">
+                        <label class="form-check-label" for="new-approved">
+                            Approved for this role
+                        </label>
+                    </div>
+                    
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" id="new-is-staff" name="is_staff">
+                        <label class="form-check-label" for="new-is-staff">
+                            Staff user (can access admin site)
+                        </label>
+                    </div>
+                </div>
+                
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-light" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-success" id="bulk-approve-btn" disabled>
+                        <i class="fas fa-check-circle me-2"></i>Approve Selected Users
+                    </button> type="submit" class="btn btn-success">
+                        <i class="fas fa-user-plus me-2"></i>Create User
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Role Modal -->
+<div class="modal fade" id="editRoleModal" tabindex="-1" aria-labelledby="editRoleModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editRoleModalLabel">Edit User Role</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="post">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="update_role">
+                <input type="hidden" name="user_id" id="edit-user-id">
+                
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Username</label>
+                        <input type="text" class="form-control" id="edit-username" readonly>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="role" class="form-label">Role</label>
+                        <select class="form-select" name="role" id="edit-role" required>
+                            {% for role_value, role_name in role_choices %}
+                            <option value="{{ role_value }}">{{ role_name }}</option>
+                            {% endfor %}
+                        </select>
+                        <div class="role-description" id="edit-role-description">
+                            <!-- Role description will be updated by JavaScript -->
+                        </div>
+                    </div>
+                    
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" name="is_approved" id="edit-approved">
+                        <label class="form-check-label" for="edit-approved">
+                            Approved for this role
+                        </label>
+                    </div>
+                    
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" name="is_staff" id="edit-is-staff">
+                        <label class="form-check-label" for="edit-is-staff">
+                            Staff user (can access admin site)
+                        </label>
+                    </div>
+                    
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <span class="small">
+                            Users need approval to create events or perform role-specific actions.
+                            The staff checkbox controls access to the Django admin site.
+                        </span>
+                    </div>
+                </div>
+                
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-light" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- User Details Modal -->
+<div class="modal fade" id="userDetailsModal" tabindex="-1" aria-labelledby="userDetailsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="userDetailsModalLabel">User Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h5 class="mb-3">Account Information</h5>
+                        
+                        <div class="user-detail-row mb-2 d-flex">
+                            <div class="label me-2">Username:</div>
+                            <div class="value" id="detail-username"></div>
+                        </div>
+                        
+                        <div class="user-detail-row mb-2 d-flex">
+                            <div class="label me-2">Email:</div>
+                            <div class="value" id="detail-email"></div>
+                        </div>
+                        
+                        <div class="user-detail-row mb-2 d-flex">
+                            <div class="label me-2">Full Name:</div>
+                            <div class="value" id="detail-fullname"></div>
+                        </div>
+                        
+                        <div class="user-detail-row mb-2 d-flex">
+                            <div class="label me-2">Joined:</div>
+                            <div class="value" id="detail-joined"></div>
+                        </div>
+                        
+                        <div class="user-detail-row mb-2 d-flex">
+                            <div class="label me-2">Role:</div>
+                            <div class="value">
+                                <span class="badge role-badge" id="detail-role-badge"></span>
+                                <span id="detail-approved-badge"></span>
+                            </div>
+                        </div>
+                        
+                        <div class="user-detail-row mb-2 d-flex">
+                            <div class="label me-2">Last Login:</div>
+                            <div class="value" id="detail-last-login"></div>
+                        </div>
+                        
+                        <div class="user-detail-row mb-2 d-flex">
+                            <div class="label me-2">Status:</div>
+                            <div class="value" id="detail-status"></div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <h5 class="mb-3">User Activity</h5>
+                        
+                        <ul class="nav nav-tabs" role="tablist">
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link active" id="events-tab" data-bs-toggle="tab" data-bs-target="#events-tab-pane" type="button" role="tab">Events</button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="tickets-tab" data-bs-toggle="tab" data-bs-target="#tickets-tab-pane" type="button" role="tab">Tickets</button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="payments-tab" data-bs-toggle="tab" data-bs-target="#payments-tab-pane" type="button" role="tab">Payments</button>
+                            </li>
+                        </ul>
+                        
+                        <div class="tab-content mt-3">
+                            <div class="tab-pane fade show active" id="events-tab-pane" role="tabpanel" tabindex="0">
+                                <div id="user-events" class="user-activity">
+                                    <div class="activity-empty">
+                                        <i class="fas fa-calendar-alt"></i>
+                                        <p>No events created by this user</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="tab-pane fade" id="tickets-tab-pane" role="tabpanel" tabindex="0">
+                                <div id="user-tickets" class="user-activity">
+                                    <div class="activity-empty">
+                                        <i class="fas fa-ticket-alt"></i>
+                                        <p>No tickets purchased by this user</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="tab-pane fade" id="payments-tab-pane" role="tabpanel" tabindex="0">
+                                <div id="user-payments" class="user-activity">
+                                    <div class="activity-empty">
+                                        <i class="fas fa-credit-card"></i>
+                                        <p>No payments made by this user</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-light" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary edit-user-btn">
+                    <i class="fas fa-edit me-1"></i> Edit User
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete User Modal -->
+<div class="modal fade" id="deleteUserModal" tabindex="-1" aria-labelledby="deleteUserModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteUserModalLabel">Delete User</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="post" action="{% url 'admin_delete_user' %}">
+                {% csrf_token %}
+                <input type="hidden" name="user_id" id="delete-user-id">
+                
+                <div class="modal-body">
+                    <p>Are you sure you want to delete the user "<span id="delete-username"></span>"?</p>
+                    
+                    <div class="alert alert-danger">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        <span>This action cannot be undone. All data associated with this user will be permanently deleted, including their events, tickets, and payments.</span>
+                    </div>
+                    
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" id="confirm-delete" required>
+                        <label class="form-check-label" for="confirm-delete">
+                            I understand that this action is permanent and cannot be undone.
+                        </label>
+                    </div>
+                </div>
+                
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-light" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-danger" id="delete-user-btn" disabled>
+                        <i class="fas fa-trash me-2"></i>Delete User
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Bulk Approve Modal -->
+<div class="modal fade" id="bulkApproveModal" tabindex="-1" aria-labelledby="bulkApproveModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="bulkApproveModalLabel">Bulk Approve Users</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="post">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="bulk_approve">
+                
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="role_to_approve" class="form-label">Role to Approve</label>
+                        <select class="form-select" name="role_to_approve" id="role_to_approve" required>
+                            {% for role_value, role_name in role_choices %}
+                                {% if role_value != 'admin' and role_value != 'buyer' %}
+                                <option value="{{ role_value }}">{{ role_name }}</option>
+                                {% endif %}
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div id="users-to-approve-container" class="mb-3">
+                        <label class="form-label">Users to Approve</label>
+                        <div class="alert alert-info" id="no-users-message">
+                            <i class="fas fa-info-circle me-2"></i>
+                            Select the role above to see eligible users.
+                        </div>
+                        <div id="user-checkboxes" class="d-none">
+                            <!-- Will be populated by JavaScript -->
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-light" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-success" id="bulk-approve-btn" disabled>
+                        <i class="fas fa-check-circle me-2"></i>Approve Selected Users
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Role descriptions for tooltips and information
+        const roleDescriptions = {
+            'admin': 'Administrators have full access to all features and can manage other users.',
+            'event_manager': 'Event Managers can create, edit, and manage multiple events and view analytics.',
+            'host': 'Hosts can create and manage their own events, but have limited administrative capabilities.',
+            'buyer': 'Buyers can purchase tickets to events but cannot create or manage events.'
+        };
+
+        // Update role descriptions when role is selected
+        document.getElementById('new-role').addEventListener('change', function() {
+            const description = roleDescriptions[this.value] || '';
+            document.getElementById('new-role-description').textContent = description;
+        });
+
+        document.getElementById('edit-role').addEventListener('change', function() {
+            const description = roleDescriptions[this.value] || '';
+            document.getElementById('edit-role-description').textContent = description;
+        });
+
+        // Initialize role description on page load
+        document.getElementById('new-role-description').textContent = 
+            roleDescriptions[document.getElementById('new-role').value] || '';
+
+        // Handle role filter tabs
+        document.querySelectorAll('.nav-pills .nav-link').forEach(tab => {
+            tab.addEventListener('click', function(e) {
+                e.preventDefault();
+                
+                // Update active state
+                document.querySelectorAll('.nav-pills .nav-link').forEach(t => {
+                    t.classList.remove('active');
+                });
+                this.classList.add('active');
+                
+                // Filter users by role
+                const selectedRole = this.getAttribute('data-role');
+                filterUsersByRole(selectedRole);
+            });
+        });
+
+        // Handle quick filters
+        document.querySelectorAll('.filter-badge').forEach(badge => {
+            badge.addEventListener('click', function() {
+                const filterType = this.getAttribute('data-filter');
+                
+                if (filterType === 'reset') {
+                    // Show all users
+                    document.querySelectorAll('tbody tr').forEach(row => {
+                        row.style.display = '';
+                    });
+                    
+                    // Reset role filter tabs
+                    document.querySelectorAll('.nav-pills .nav-link').forEach(t => {
+                        t.classList.remove('active');
+                    });
+                    document.querySelector('[data-role="all"]').classList.add('active');
+                } else {
+                    // Apply specific filter
+                    applyQuickFilter(filterType);
+                }
+            });
+        });
+
+        // Function to filter users by role
+        function filterUsersByRole(role) {
+            document.querySelectorAll('tbody tr').forEach(row => {
+                if (role === 'all' || row.getAttribute('data-role') === role) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        }
+
+        // Function to apply quick filters
+        function applyQuickFilter(filterType) {
+            document.querySelectorAll('tbody tr').forEach(row => {
+                switch(filterType) {
+                    case 'pending':
+                        row.style.display = (row.getAttribute('data-approved') === 'false') ? '' : 'none';
+                        break;
+                    case 'recent':
+                        // Show users joined in the last 30 days
+                        const joinDate = new Date(row.getAttribute('data-joined'));
+                        const thirtyDaysAgo = new Date();
+                        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+                        row.style.display = (joinDate >= thirtyDaysAgo) ? '' : 'none';
+                        break;
+                    case 'active':
+                        // Show users who logged in recently
+                        const lastLogin = row.getAttribute('data-last-login');
+                        row.style.display = (lastLogin !== 'never') ? '' : 'none';
+                        break;
+                    case 'inactive':
+                        // Show users who never logged in
+                        const loginStatus = row.getAttribute('data-last-login');
+                        row.style.display = (loginStatus === 'never') ? '' : 'none';
+                        break;
+                    case 'social':
+                        // Show users with social login
+                        const hasSocial = row.getAttribute('data-has-social');
+                        row.style.display = (hasSocial === 'true') ? '' : 'none';
+                        break;
+                }
+            });
+        }
+
+        // Search functionality
+        document.getElementById('search-btn').addEventListener('click', searchUsers);
+        document.getElementById('user-search').addEventListener('keyup', function(e) {
+            if (e.key === 'Enter') {
+                searchUsers();
+            }
+        });
+
+        function searchUsers() {
+            const searchTerm = document.getElementById('user-search').value.toLowerCase();
+            
+            document.querySelectorAll('tbody tr').forEach(row => {
+                const username = row.getAttribute('data-username').toLowerCase();
+                const email = row.getAttribute('data-email').toLowerCase();
+                
+                if (username.includes(searchTerm) || email.includes(searchTerm)) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        }
+
+        // Handle bulk selection
+        document.getElementById('select-all').addEventListener('change', function() {
+            document.querySelectorAll('.user-checkbox').forEach(checkbox => {
+                // Only select visible rows
+                if (checkbox.closest('tr').style.display !== 'none') {
+                    checkbox.checked = this.checked;
+                }
+            });
+            updateBulkControls();
+        });
+
+        document.querySelectorAll('.user-checkbox').forEach(checkbox => {
+            checkbox.addEventListener('change', updateBulkControls);
+        });
+
+        function updateBulkControls() {
+            const checkedUsers = document.querySelectorAll('.user-checkbox:checked');
+            document.getElementById('bulk-approve-btn').disabled = checkedUsers.length === 0;
+        }
+
+        // Edit role modal
+        document.querySelectorAll('[data-bs-target="#editRoleModal"]').forEach(button => {
+            button.addEventListener('click', function() {
+                const userId = this.getAttribute('data-user-id');
+                const username = this.getAttribute('data-username');
+                const role = this.getAttribute('data-role');
+                const approved = this.getAttribute('data-approved') === 'true';
+                
+                document.getElementById('edit-user-id').value = userId;
+                document.getElementById('edit-username').value = username;
+                document.getElementById('edit-role').value = role;
+                document.getElementById('edit-approved').checked = approved;
+                
+                // Update role description
+                document.getElementById('edit-role-description').textContent = roleDescriptions[role] || '';
+            });
+        });
+
+        // Delete user modal
+        document.querySelectorAll('[data-bs-target="#deleteUserModal"]').forEach(button => {
+            button.addEventListener('click', function() {
+                const userId = this.getAttribute('data-user-id');
+                const username = this.getAttribute('data-username');
+                
+                document.getElementById('delete-user-id').value = userId;
+                document.getElementById('delete-username').textContent = username;
+            });
+        });
+
+        // Confirmation checkbox for delete
+        document.getElementById('confirm-delete').addEventListener('change', function() {
+            document.getElementById('delete-user-btn').disabled = !this.checked;
+        });
+
+        // User details modal
+        document.querySelectorAll('.user-details-btn').forEach(button => {
+            button.addEventListener('click', function() {
+                const userId = this.getAttribute('data-user-id');
+                const username = this.getAttribute('data-username');
+                const email = this.getAttribute('data-email');
+                const dateJoined = this.getAttribute('data-date-joined');
+                const firstName = this.getAttribute('data-first-name') || '';
+                const lastName = this.getAttribute('data-last-name') || '';
+                const role = this.getAttribute('data-role');
+                const roleDisplay = this.getAttribute('data-role-display');
+                const approved = this.getAttribute('data-approved') === 'true';
+                
+                // Populate details
+                document.getElementById('detail-username').textContent = username;
+                document.getElementById('detail-email').textContent = email;
+                document.getElementById('detail-joined').textContent = dateJoined;
+                
+                // Full name
+                const fullName = (firstName && lastName) ? `${firstName} ${lastName}` : 
+                                  firstName || lastName || 'Not provided';
+                document.getElementById('detail-fullname').textContent = fullName;
+                
+                // Role badge
+                const roleBadge = document.getElementById('detail-role-badge');
+                roleBadge.textContent = roleDisplay;
+                roleBadge.className = `badge role-badge role-${role}`;
+                
+                // Approval badge
+                const approvedBadge = document.getElementById('detail-approved-badge');
+                if (approved) {
+                    approvedBadge.innerHTML = '<span class="badge bg-success ms-2">Approved</span>';
+                } else {
+                    approvedBadge.innerHTML = '<span class="badge bg-warning ms-2">Pending</span>';
+                }
+                
+                // Setup edit button
+                const editBtn = document.querySelector('.edit-user-btn');
+                editBtn.setAttribute('data-user-id', userId);
+                editBtn.setAttribute('data-username', username);
+                editBtn.setAttribute('data-role', role);
+                editBtn.setAttribute('data-approved', approved);
+                
+                // Load user activity (this would be an AJAX call in a real app)
+                loadUserActivity(userId);
+            });
+        });
+
+        // Link from details modal to edit modal
+        document.querySelector('.edit-user-btn').addEventListener('click', function() {
+            const userId = this.getAttribute('data-user-id');
+            const username = this.getAttribute('data-username');
+            const role = this.getAttribute('data-role');
+            const approved = this.getAttribute('data-approved') === 'true';
+            
+            // Close details modal
+            const detailsModal = bootstrap.Modal.getInstance(document.getElementById('userDetailsModal'));
+            detailsModal.hide();
+            
+            // Setup and open edit modal
+            document.getElementById('edit-user-id').value = userId;
+            document.getElementById('edit-username').value = username;
+            document.getElementById('edit-role').value = role;
+            document.getElementById('edit-approved').checked = approved;
+            document.getElementById('edit-role-description').textContent = roleDescriptions[role] || '';
+            
+            const editModal = new bootstrap.Modal(document.getElementById('editRoleModal'));
+            editModal.show();
+        });
+
+        // Handle role selection in bulk approve modal
+        document.getElementById('role_to_approve').addEventListener('change', function() {
+            const selectedRole = this.value;
+            populateUsersToApprove(selectedRole);
+        });
+
+        // Function to populate users to approve
+        function populateUsersToApprove(role) {
+            const container = document.getElementById('user-checkboxes');
+            const noUsersMessage = document.getElementById('no-users-message');
+            
+            // Clear existing checkboxes
+            container.innerHTML = '';
+            
+            // Find users with this role who are not approved
+            const eligibleUsers = Array.from(document.querySelectorAll('tbody tr'))
+                .filter(row => 
+                    row.getAttribute('data-role') === role && 
+                    row.getAttribute('data-approved') === 'false');
+            
+            if (eligibleUsers.length === 0) {
+                container.classList.add('d-none');
+                noUsersMessage.textContent = `No pending ${role} users found to approve.`;
+                noUsersMessage.classList.remove('d-none');
+                document.getElementById('bulk-approve-btn').disabled = true;
+                return;
+            }
+            
+            noUsersMessage.classList.add('d-none');
+            container.classList.remove('d-none');
+            
+            // Create checkboxes for each eligible user
+            eligibleUsers.forEach(row => {
+                const userId = row.querySelector('.user-checkbox').getAttribute('data-user-id');
+                const username = row.getAttribute('data-username');
+                
+                const checkboxDiv = document.createElement('div');
+                checkboxDiv.className = 'form-check';
+                checkboxDiv.innerHTML = `
+                    <input class="form-check-input bulk-approve-checkbox" type="checkbox" 
+                           id="approve-user-${userId}" name="approve_users[]" value="${userId}">
+                    <label class="form-check-label" for="approve-user-${userId}">
+                        ${username}
+                    </label>
+                `;
+                container.appendChild(checkboxDiv);
+            });
+            
+            // Add event listeners to new checkboxes
+            document.querySelectorAll('.bulk-approve-checkbox').forEach(checkbox => {
+                checkbox.addEventListener('change', function() {
+                    const anyChecked = document.querySelectorAll('.bulk-approve-checkbox:checked').length > 0;
+                    document.getElementById('bulk-approve-btn').disabled = !anyChecked;
+                });
+            });
+        }
+
+        // Function to load user activity (would be AJAX in real app)
+        function loadUserActivity(userId) {
+            // This is a placeholder - in a real app, you'd fetch this data via AJAX
+            // For now, we'll just show the empty state
+            document.getElementById('user-events').innerHTML = `
+                <div class="activity-empty">
+                    <i class="fas fa-calendar-alt"></i>
+                    <p>No events created by this user</p>
+                </div>
+            `;
+            
+            document.getElementById('user-tickets').innerHTML = `
+                <div class="activity-empty">
+                    <i class="fas fa-ticket-alt"></i>
+                    <p>No tickets purchased by this user</p>
+                </div>
+            `;
+            
+            document.getElementById('user-payments').innerHTML = `
+                <div class="activity-empty">
+                    <i class="fas fa-credit-card"></i>
+                    <p>No payments made by this user</p>
+                </div>
+            `;
+        }
+
+        // Calculate and update user statistics
+        function updateUserStats() {
+            // Count users by role
+            const roleCounts = {};
+            let pendingCount = 0;
+            
+            document.querySelectorAll('tbody tr').forEach(row => {
+                const role = row.getAttribute('data-role');
+                const approved = row.getAttribute('data-approved') === 'true';
+                
+                // Increment role count
+                roleCounts[role] = (roleCounts[role] || 0) + 1;
+                
+                // Count pending approvals
+                if (!approved && role !== 'buyer') {
+                    pendingCount++;
+                }
+            });
+            
+            // Update stats in the UI
+            for (const [role, count] of Object.entries(roleCounts)) {
+                const countElement = document.getElementById(`count-${role}`);
+                if (countElement) {
+                    countElement.textContent = count;
+                }
+            }
+            
+            // Update pending count
+            document.getElementById('pending-count').textContent = pendingCount;
+        }
+        
+        // Initialize stats on page load
+        updateUserStats();
+    });
+</script>
+{% endblock %}
